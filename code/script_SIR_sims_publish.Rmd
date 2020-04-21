@@ -1,10 +1,7 @@
 ---
 title: "COVID-19 modeling in South Dakota"
 date: "April 2020"
-output:
-  pdf_document: default
-  html_document: default
-  word_document: default
+output: github_document
 ---
 # Authors
 *Jeff Wesner, Ph.D.*^1^, *Dan Van Peursem, Ph.D.*^2^, *Jose Flores, Ph.D.*^2,3^, *Yuhlong Lio, Ph.D.*^2^

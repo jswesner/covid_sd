@@ -1,0 +1,472 @@
+---
+title: "COVID-19 modeling in South Dakota"
+date: "April 2020"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+# Authors
+*Jeff Wesner, Ph.D.*^1^, *Dan Van Peursem, Ph.D.*^2^, *Jose Flores, Ph.D.*^2,3^, *Yuhlong Lio, Ph.D.*^2^
+
+University of South Dakota
+
+^1^Department of Biology, ^2^Department of Mathematical Sciences, ^3^Department of Computer Science
+
+<Jeff.Wesner@usd.edu>
+
+# Purpose
+To predict hospital bed needs, ICU needs, and ventilator needs in South Dakota due to COVID-19. 
+
+# General Approach and Justification
+We estimated R0 from current incidence rates in South Dakota. We then fit SIR models using our estimates of R0 and compared model predictions to actual values of hospitalizations reported by the South Dakota Department of Health (data source: https://www.keloland.com/keloland-com-original/why-south-dakotas-number-of-deaths-isnt-always-up-to-date/. We chose this approach because it does not rely on external estimates of R0, but instead derives them from data specific to South Dakota.
+
+Because our estimates of R0 are derived from reported incidence data, they reflect any day-to-day adjustments in R0 due to social distancing (with an unknown lag time). In other words, as social distancing reduces incidence, that will be reflected in our estimates of R0. It is worth noting that reported incidence is almost certainly lower than true incidence. However, this does not alter our estimates of R0, assuming that the rate of underreporting is constant across time. 
+
+# Derivation of R0
+We used the following equation to estimate R0 (eqn 3.1 in Wallinga and Lipsitch 2007) https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1766383/?report=reader#!po=83.3333:
+
+$$R0 = 1 + r/b$$
+
+where 1/b is the generation time (aka serial interval) in days, and *r* is the slope of a linear regression between daily incidence and time. This approach is recommended during the initial phase of an epidemice when growth is approximately log-linear. 
+
+We estimated a posterior distribution of *r* using reported incidence data in the following regression:
+
+$$log(y_i) \sim N(\mu_i, \sigma)$$
+$$\mu_i = \alpha + \beta x_i$$
+$$\alpha \sim N(0,1)$$
+$$\beta \sim N(0,1)$$
+$$\sigma \sim HalfCauchy(0,1)$$
+where *log*($y_i$) is log-transformed incidence on date $i$, distributed as a normal distribution with a mean $\mu_i$ and standard deviation $\sigma$, $\alpha$ is the intercept, $\beta$ is the slope (aka *r*).The prior distributions for each parameter are below the regression equation. 
+
+The outcome of that regression is below.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F,
+                      results = "hide", message=FALSE, warning=FALSE, paged.print=FALSE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(viridis)
+library(deSolve)
+library(scales)
+library(lubridate)
+library(viridis)
+library(readr)
+library(readxl)
+library(ggrepel)
+library(cowplot)
+library(viridis)
+library(brms)
+library(knitr)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+#Load current SD covid data and plot it
+sd_covid_data <- read.csv(here::here("data/data_kelo.csv")) %>% 
+  clean_names() %>% 
+  mutate(date_num = as.numeric(mdy(date)) - 18330,
+         date = mdy(date),
+         source = "SD_DOH via Keloland news",
+         incidence = positive_cases - lag(positive_cases),
+         hospitalized = parse_number(as.character(hospitalized)),
+         incidence1 = incidence + 1)  ##adds 1 to all incidence to allow for zeros in log-linear regression
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+#Run linear regression
+lin_reg <- brm(log(incidence1) ~ date_num, data = sd_covid_data,
+               family = gaussian(),
+               prior = c(prior(normal(0,1), class = "Intercept"),
+                         prior(normal(0,0.5), class = "b")),
+               cores = 4, sample_prior = "yes")
+
+posts <- posterior_samples(lin_reg)
+mean_r <- round(mean(posts$b_date_num), 2)
+sd_r <- round(sd(posts$b_date_num),2)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.width=4, fig.height = 4}
+fit_mod <- fitted(lin_reg) %>% 
+  as_tibble() %>% 
+  clean_names() %>% 
+  mutate(date = sd_covid_data %>% filter(date_num > 0) %>% select(date) %>% pull())
+
+
+plot_r <- fit_mod %>% 
+  ggplot(aes(x = date, y = estimate-1)) +
+  geom_point(data = sd_covid_data %>% filter(date_num > 0), aes(x = date, y = log(incidence1)-1)) +
+  geom_line() +
+  geom_ribbon(alpha = 0.2, aes(ymin = q2_5-1, ymax = q97_5-1)) +
+  labs(y = "log(incidence)",
+       x = NULL,
+       title = "Linear fit of log incidence over time",
+       subtitle = bquote('slope'~italic("r = ")~.(mean_r)~"\u00B1"~.(sd_r)~'(mean \u00B1 sd)'))  +
+  theme_classic()
+
+plot_r
+
+ggsave(plot_r, file = "plot_r.jpg", width = 6, height = 6)
+
+
+
+```
+
+We simulated uncertainty in R0 by sampling from the posterior distribution of *r* 500 times and re-calculating the equation for R0 each time. We did this under three scenarios of generation time (4, 6, or 7 days). These were chosen based on Park et al. (2020) who estimated a generation time for COVID-19 of 4-8 days - https://www.mdpi.com/2077-0383/9/4/967. The table below shows the estimated R0 under three assumptions of generation time. Five hundred samples from these values were entered into the following SIR model:
+ 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+#extract slope mean and CI and estimate R0 from equation above
+posts <- as_tibble(posterior_samples(lin_reg)) %>% 
+  rename(r = b_date_num) %>% 
+  select(r) %>% 
+  mutate(GT7 = 7,
+         GT6 = 6,
+         GT4 = 4) %>% 
+  gather(generation_time, gt_days, c(GT7, GT6, GT4)) %>% 
+  mutate(R0 = 1 + gt_days*r)
+
+r0_mean_sd <- posts %>% 
+  group_by(generation_time) %>% 
+  summarize(mean = round(mean(R0),2),
+            sd = round(sd(R0),2))
+r0_mean_sd
+```
+
+$$\frac{dS}{dt} = \frac{\beta*S*I}N$$
+
+$$\frac{dI}{dt} = \frac{\beta*S*I}N - \gamma*I$$
+
+$$\frac{dR}{dt} = \gamma*I$$
+
+where $\gamma$ is 1/$days_{infected}$, $\beta$ is $gamma$*R0, $days_{infected}$ is 7, and $N$ is $S+I+R$. We simulated 200 days of infection and assumed starting values for S = 0.99999, I = 0.000001, and R = 0.000009. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+#SIR model
+closed.sir.model <- function (t, x, params) {
+  ## first extract the state variables
+  S <- x[1]
+  I <- x[2]
+  R <- x[3]
+  ## now extract the parameters
+  beta <- params["beta"] 
+  gamma <- params["gamma"] 
+  N <- S+I+R
+  ## now code the model equations
+  dSdt <- -beta*S*I/N
+  dIdt <- beta*S*I/N-gamma*I
+  dRdt <- gamma*I
+  ## combine results into a single vector
+  dxdt <- c(dSdt,dIdt,dRdt)
+  ## return result as a list!
+  list(dxdt)
+}
+
+#parameters inits
+num_days_infect = 7
+gamma = 1/num_days_infect
+parms <- c(beta=beta,gamma= gamma)
+times <- seq(from = 0, to = 200, by = 1)
+xstart <- c(S = 0.99999, I = 0.000001, R = 0.000009)   # assumes almost no intitial immunity
+
+#4 day generation time
+N <- 500
+r0sims4 <- posts %>% 
+  filter(gt_days == 4) %>% 
+  select(R0) %>% 
+  sample_n(N) %>% pull()
+
+out4 <- list()
+for (i in 1:N) {
+  out4[[i]] <- ode(
+  func=closed.sir.model,
+  y=xstart,
+  times=times,
+  parms= c(beta=gamma*r0sims4[i],gamma = gamma)) %>%
+  as.data.frame() %>% 
+  gather(variable, value, -time) %>% 
+    mutate(R0 = r0sims4[i])
+  out_noimmune4 <- out4
+}
+
+#6 day generation time
+N <- 500
+r0sims6 <- posts %>% 
+  filter(gt_days == 6) %>% 
+  select(R0) %>% 
+  sample_n(N) %>% pull()
+
+out6 <- list()
+for (i in 1:N) {
+  out6[[i]] <- ode(
+    func=closed.sir.model,
+    y=xstart,
+    times=times,
+    parms= c(beta=gamma*r0sims6[i],gamma = gamma)) %>%
+    as.data.frame() %>% 
+    gather(variable, value, -time) %>% 
+    mutate(R0 = r0sims6[i])
+  out_noimmune6 <- out6
+}
+
+
+#7 day generation time
+N <- 500
+r0sims7 <- posts %>% 
+  filter(gt_days == 7) %>% 
+  select(R0) %>% 
+  sample_n(N) %>% pull()
+
+out7 <- list()
+for (i in 1:N) {
+  out7[[i]] <- ode(
+    func=closed.sir.model,
+    y=xstart,
+    times=times,
+    parms= c(beta=gamma*r0sims7[i],gamma = gamma)) %>%
+    as.data.frame() %>% 
+    gather(variable, value, -time) %>% 
+    mutate(R0 = r0sims7[i])
+  out_noimmune7 <- out7
+}
+
+
+m4 <- bind_rows(out_noimmune4) %>% 
+  mutate(gt = 4,
+         iter = rep(1:N, each = 603),
+         date = as_date(time + as.numeric(ymd("2020-02-22"))))
+m6 <- bind_rows(out_noimmune6) %>% 
+  mutate(gt = 6,
+         iter = rep(1:N, each = 603),
+         date = as_date(time + as.numeric(ymd("2020-02-22"))))
+m7 <- bind_rows(out_noimmune7) %>% 
+  mutate(gt = 7,
+         iter = rep(1:N, each = 603),
+         date = as_date(time + as.numeric(ymd("2020-02-22"))))
+
+
+
+all_sims <- bind_rows(m4,m6,m7) %>% 
+  mutate(generation_time = paste(gt,"day generation time"))
+
+
+all_hosp <- as_tibble(all_sims) %>% filter(variable != "I") %>%
+  pivot_wider(names_from = variable, values_from = value) %>% 
+  group_by(iter,gt) %>% 
+  mutate(i_cumulative = 1 - min(R) - S,
+         hosp_rate = 0.04,
+         hosp_length_days = 7,
+         icu_hosp_number = 1:201,
+         icu_rate_of_hosp_rate = 0.015,
+         icu_length_days = 8,
+         vent_rate_of_icu_rate = 0.0084,
+         vent_length_days = 10,
+         hospital_beds = hosp_rate*(i_cumulative - lag(i_cumulative , 7)) + icu_rate_of_hosp_rate*(lag(i_cumulative , 7) - lag(i_cumulative , 8)),
+         icu_beds = icu_rate_of_hosp_rate*(i_cumulative - lag(i_cumulative , 8)),
+         ventilators = vent_rate_of_icu_rate*(i_cumulative - lag(i_cumulative, 10))) %>% 
+  gather(medical_need, value, c(hospital_beds, icu_beds, ventilators)) %>% 
+  mutate(generation_time = paste(gt,"day generation time"))
+
+
+
+
+#make raw data to plot
+d6 <- sd_covid_data %>% mutate(gt = 6)
+d4 <- d6 %>% mutate(gt = 4)
+d7 <- d4 %>% mutate(gt = 7)
+
+
+sd_covid_plot_data <- bind_rows(d4,d6,d7) %>% 
+  mutate(generation_time = paste(gt,"day generation time"))
+
+#max_I_time 
+all_sims %>% 
+  filter(variable == "I") %>% 
+  group_by(gt, date) %>%
+  summarize(mean = mean(value)) %>% 
+  filter(mean == max(mean))
+
+
+#max_hosp_time 
+all_hosp %>% 
+  group_by(date, medical_need, generation_time) %>%
+  mutate(number = value*884235) %>% 
+  summarize(number = mean(number)) %>% 
+  drop_na(number) %>% 
+  group_by(medical_need, generation_time) %>%  
+  filter(number == max(number))
+  
+  
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.height=7, fig.width=7}
+#make plots
+summary_sims <- all_sims %>% 
+  group_by(date, variable, generation_time) %>% 
+  mutate(number = value*884235) %>% 
+  summarize(mean = mean(number),
+            lci = quantile(number, probs = 0.025),
+            uci = quantile(number, probs = 0.975))
+  
+
+full_plot <- summary_sims %>% 
+  ggplot(aes(x = date, y = mean)) +
+  geom_ribbon(aes(fill = variable, ymin = lci, ymax = uci)) +
+  geom_line(aes(group = variable)) + 
+  scale_fill_viridis_d() +
+  geom_point(data = sd_covid_data, aes(x = date, y = active_cases),
+             shape = 21, size = 2, fill = "yellow") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) +
+  labs(title = "500 simulations of SIR",
+       subtitle = "(dots = real data)",
+       y = "Number of people",
+       x = NULL) +
+  facet_wrap(~generation_time) +
+  theme(text = element_text(size = 11)) +
+  theme_classic()+
+    NULL 
+
+zoomed_plot <- all_sims %>% 
+  group_by(date, variable, generation_time) %>% 
+  filter(variable == "S") %>% 
+  mutate(susceptible = value*884235,
+         I_cumulative = 884235-susceptible) %>% 
+  summarize(mean = mean(I_cumulative),
+            lci = quantile(I_cumulative, probs = 0.025),
+            uci = quantile(I_cumulative, probs = 0.975)) %>% 
+  ggplot(aes(x = date, y = mean)) +
+  geom_ribbon(aes(fill = variable, ymin = lci, ymax = uci), fill = "#7851a9") +
+  geom_line(aes(group = variable)) +
+  geom_point(data = sd_covid_data,
+             aes(x = date, y = positive_cases), shape = 21,
+             fill = "yellow", size = 2) + 
+  scale_shape_manual(values = c(21,22,24)) + 
+  scale_x_date(limits = ymd(c("2020-02-22", "2020-05-01"))) +
+  coord_cartesian(ylim = c(0,3000)) +
+  labs(title = "500 SIR simulations of cumulative COVID-19 cases",
+       subtitle = "(dots = real data)",
+       y = "Cumulative cases",
+       x = NULL) +
+  facet_wrap(~generation_time)+
+  theme(text = element_text(size = 11)) +
+  theme_classic() + 
+  NULL
+
+both <- plot_grid(full_plot, zoomed_plot, ncol = 1)
+both
+ggsave(both, file = here::here("plots/jeff_cumulative_cases.jpg"), width = 8, height = 8)
+```
+The graphs above show the outcome of the SIR model under 4, 6, or 7 day generation times. Lines are the mean predictions, shaded areas are the 2.5 and 97.5% quantiles, and the dots are the reported data from SD DOH. 
+
+#Hospital Beds, ICU beds, and Ventilators
+From the predictions of cases above, we estimated the number of hospital beds, ICU beds, and ventilators needed by assuming that 4% of cases would need hospitalization, 1.5% of cases would need an ICU bed, and 1.05% of cases would need a ventilator. We also assumed a mean stays in the hospital system as a whole of 7, 8, or 10 days for hospitalization, ICU, and ventilator, respectively.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.height=9, fig.width=9}
+sd_hospital_beds <- read_excel(here::here("data/sd_hospital_beds.xlsx")) %>% 
+  clean_names()
+
+all_beds <- sum(sd_hospital_beds$total_beds)
+
+
+#hospitalized data
+hosp <- all_hosp %>% 
+  group_by(date, medical_need, generation_time) %>% 
+  mutate(number = value*884235) %>% 
+  drop_na(number) %>% 
+  summarize(mean = mean(number),
+            lci = quantile(number, probs = 0.025),
+            uci = quantile(number, probs = 0.975)) %>% 
+  ggplot(aes(x = date, y = mean)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, fill = medical_need), alpha = 0.7) +
+  geom_line(aes(group = medical_need)) +
+  geom_point(data = sd_covid_plot_data, 
+             aes(x = date, y = hospitalized),
+             shape = 21, fill = "yellow") +
+  scale_fill_viridis_d(option = "E") +
+  facet_wrap(~generation_time) +
+  geom_hline(yintercept = all_beds) +
+  # annotate("text", x = sd_covid_plot_data$date[5], y = 2980, "All Hospital Beds\nin SD") +
+  labs(title = "Medical Capacity Needs - predicted",
+       subtitle = "(dots = real data)",
+       y = "Number",
+       x = NULL) +
+  theme_classic() +
+  scale_x_date(date_breaks = "months" , date_labels = "%b")+
+  theme(text = element_text(size = 11),
+        legend.position = "top") +
+  NULL
+
+hosp_zoomed <- all_hosp %>% 
+  filter(medical_need == "hospital_beds") %>% 
+  group_by(date,generation_time) %>%
+  mutate(number = value*884235) %>% 
+  drop_na(number) %>% 
+  group_by(date, iter,generation_time) %>% 
+  mutate(number_cumulative = cumsum(number)) %>%
+  group_by(date,generation_time) %>% 
+    summarize(mean = mean(number_cumulative),
+            lci = quantile(number_cumulative, probs = 0.025),
+            uci = quantile(number_cumulative, probs = 0.975)) %>% 
+  ggplot(aes(x = date, y = mean)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci), alpha = 0.7, fill = "#00204DFF") +
+  geom_line() +
+  geom_point(data = sd_covid_plot_data, 
+             aes(x = date, y = hospitalized),
+             shape = 21, fill = "yellow",
+             size = 1.5) +
+  scale_x_date(limits = ymd(c("2020-03-10", "2020-05-01"))) +
+  coord_cartesian(ylim = c(0,150)) +
+  facet_wrap(~generation_time) +
+  labs(title = "How well do models match current data?",
+       subtitle = "(dots = real data)",
+       y = "Cumulative number hospitalized",
+       x = NULL) +
+  theme_classic() +
+  theme(text = element_text(size = 11)) +
+  NULL
+
+
+both_hosp <- plot_grid(hosp, hosp_zoomed, ncol = 1, rel_heights = c(1,0.8))
+both_hosp
+ggsave(both_hosp, file = here::here("plots/jeff_hosp.jpg"), width = 8, height = 8)
+```
+
+This plot shows the predicted number of hospital beds, ICU beds, and ventilators needed under each scenario. The horizontal black line shows the total number of hospital beds in South Dakota*. 
+
+The plot on the bottom shows the predicted *cumulative* number of beds compared to the actual cumulative hospital beds used. 
+*(sources: https://apps.sd.gov/ph04lassnet/rptPH04LicenseList.Aspx and https://doh.sd.gov/providers/preparedness/hospital-preparedness/system/bed-avail.aspx)
+
+The model with a 7-day generation time appears to best match the actual hospitalization data. It indicates that peak resource use will occur ~June 1 with the following needs: ~5900 hospital beds (95% CI: 4900 to 6900), ~2400 ICU beds (1990 to 2800), and ~1700 Ventilators (1400 to 1900).
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+beds_needed <- all_hosp %>% 
+  filter(gt == 7) %>% 
+  group_by(date, medical_need, gt) %>% 
+  mutate(number = value*884235) %>% 
+  drop_na(number) %>% 
+  group_by(R0, medical_need, gt) %>% 
+  mutate(max_beds = max(number)) %>% 
+  distinct(max_beds) %>% 
+  group_by(medical_need, gt) %>% 
+  summarize(mean_max = round(mean(max_beds),0),
+            lci_max = round(quantile(max_beds, probs = 0.025),0),
+            uci_max = round(quantile(max_beds, probs = 0.975),0)) %>% 
+  select(-gt) %>% 
+  ungroup() %>% 
+  mutate(medical_need = case_when(medical_need == "hospital_beds" ~ "Hospital Beds",
+                                  medical_need == "icu_beds" ~ "ICU Beds",
+                                  TRUE ~ "Ventilators"))
+
+write.csv(beds_needed, file = here::here("data/beds_needed.csv"))
+
+beds_needed
+```
+
+# Caveats
+Our main source of uncertainty in these models is generation time and R0, but all projections indicate that SD is at the very early stages of predicted exponential growth. That makes predictions in the future difficult to state with any certainty. As data are released, we will continue to update these projections semi-daily. 
+
+At present, our data treat South Dakota as a homogenous mixture, though as of this writing most of the cases are concentrated in Minnehaha county. Future models that include regional projections may be warranted. 
+
+Projections also assume a fixed hospitalization rate. This is a simplification that likely leads to conservative estimates in our model, which does not currently account for the fact that older infected persons are more likely to require hospitalization, ICU, or ventilator support at rates above 4%. Future age-structured projections will help to alleviate this uncertainty. 
+
+# Notes
+The predictions here are purely our own and may not reflect opinions of our state or our employers. We welcome feedback.

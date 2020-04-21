@@ -298,7 +298,7 @@ full_plot <- summary_sims %>%
              shape = 21, size = 2, fill = "yellow") +
   guides(colour = guide_legend(override.aes = list(alpha = 1))) +
   labs(title = "500 simulations of SIR",
-       subtitle = "(dots = real data)",
+       subtitle = "(dots = positive tests)",
        y = "Number of people",
        x = NULL) +
   facet_wrap(~generation_time) +
@@ -324,7 +324,7 @@ zoomed_plot <- all_sims %>%
   scale_x_date(limits = ymd(c("2020-02-22", "2020-05-01"))) +
   coord_cartesian(ylim = c(0,3000)) +
   labs(title = "500 SIR simulations of cumulative COVID-19 cases",
-       subtitle = "(purle = simulation of actual cases, dots = positive tests)",
+       subtitle = "(purple = simulation of actual cases, dots = positive tests)",
        y = "Cumulative cases",
        x = NULL) +
   facet_wrap(~generation_time)+
@@ -359,15 +359,11 @@ hosp <- all_hosp %>%
   ggplot(aes(x = date, y = mean)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, fill = medical_need), alpha = 0.7) +
   geom_line(aes(group = medical_need)) +
-  geom_point(data = sd_covid_plot_data, 
-             aes(x = date, y = hospitalized),
-             shape = 21, fill = "yellow") +
   scale_fill_viridis_d(option = "E") +
   facet_wrap(~generation_time) +
   geom_hline(yintercept = all_beds) +
   # annotate("text", x = sd_covid_plot_data$date[5], y = 2980, "All Hospital Beds\nin SD") +
   labs(title = "Medical Capacity Needs - predicted",
-       subtitle = "(dots = real data)",
        y = "Number",
        x = NULL) +
   theme_classic() +

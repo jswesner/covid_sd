@@ -1,4 +1,4 @@
 "","medical_need","mean_max","lci_max","uci_max"
-"1","Hospital Beds",5897,4893,6887
-"2","ICU Beds",2393,1987,2792
-"3","Ventilators",1656,1379,1928
+"1","Hospital Beds",5321,4363,6258
+"2","ICU Beds",2160,1772,2537
+"3","Ventilators",1497,1232,1755

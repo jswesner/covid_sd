@@ -2,8 +2,8 @@
 title: "COVID-19 modeling in South Dakota"
 date: "April 2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
   word_document: default
 ---
 # Authors
@@ -39,7 +39,7 @@ $$\beta \sim N(0,1)$$
 $$\sigma \sim HalfCauchy(0,1)$$
 where *log*($y_i$) is log-transformed incidence on date $i$, distributed as a normal distribution with a mean $\mu_i$ and standard deviation $\sigma$, $\alpha$ is the intercept, $\beta$ is the slope (aka *r*).The prior distributions for each parameter are below the regression equation. 
 
-The outcome of that regression is below.
+The outcome of that regression is below. It shows a clear dip in incidence over the last 3-4 days, though this has had a minimal effect thus far on our estimates of *r*. More importantly, our main comparison to model fit is the number of cumulative hospitalizations, which continue to track the model predictions (scroll below for the graph).
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(tidyverse)
@@ -106,9 +106,6 @@ plot_r <- fit_mod %>%
 plot_r
 
 ggsave(plot_r, file = here::here("plots/plot_r.jpg"), width = 6, height = 6)
-
-
-
 ```
 
 We simulated uncertainty in R0 by sampling from the posterior distribution of *r* 500 times and re-calculating the equation for R0 each time. We did this under three scenarios of generation time (4, 6, or 7 days). These were chosen based on Park et al. (2020) who estimated a generation time for COVID-19 of 4-8 days - https://www.mdpi.com/2077-0383/9/4/967. The table below shows the estimated R0 under three assumptions of generation time. Five hundred samples from these values were entered into the following SIR model:
@@ -327,7 +324,7 @@ zoomed_plot <- all_sims %>%
   scale_x_date(limits = ymd(c("2020-02-22", "2020-05-01"))) +
   coord_cartesian(ylim = c(0,3000)) +
   labs(title = "500 SIR simulations of cumulative COVID-19 cases",
-       subtitle = "(dots = real data)",
+       subtitle = "(purle = simulation of actual cases, dots = positive tests)",
        y = "Cumulative cases",
        x = NULL) +
   facet_wrap(~generation_time)+
@@ -419,7 +416,7 @@ This plot shows the predicted number of hospital beds, ICU beds, and ventilators
 The plot on the bottom shows the predicted *cumulative* number of beds compared to the actual cumulative hospital beds used. 
 *(sources: https://apps.sd.gov/ph04lassnet/rptPH04LicenseList.Aspx and https://doh.sd.gov/providers/preparedness/hospital-preparedness/system/bed-avail.aspx)
 
-The model with a 7-day generation time appears to best match the actual hospitalization data. It indicates that peak resource use will occur ~June 1 with the following needs: ~5900 hospital beds (95% CI: 4900 to 6900), ~2400 ICU beds (1990 to 2800), and ~1700 Ventilators (1400 to 1900).
+The model with a 7-day generation time appears to best match the actual hospitalization data. It indicates that peak resource use will occur ~June 1 with numbers indicated in Table 2.
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 beds_needed <- all_hosp %>% 
   filter(gt == 7) %>% 

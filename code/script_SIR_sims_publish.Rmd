@@ -41,9 +41,7 @@ where *log*($y_i$) is log-transformed incidence on date $i$, distributed as a no
 
 The outcome of that regression is below.
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F,
-                      results = "hide", message=FALSE, warning=FALSE, paged.print=FALSE)
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(tidyverse)
 library(here)
 library(janitor)
@@ -58,7 +56,7 @@ library(ggrepel)
 library(cowplot)
 library(viridis)
 library(brms)
-library(knitr)
+library(kableExtra)
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -107,7 +105,7 @@ plot_r <- fit_mod %>%
 
 plot_r
 
-ggsave(plot_r, file = "plot_r.jpg", width = 6, height = 6)
+ggsave(plot_r, file = here::here("plots/plot_r.jpg"), width = 6, height = 6)
 
 
 
@@ -115,7 +113,7 @@ ggsave(plot_r, file = "plot_r.jpg", width = 6, height = 6)
 
 We simulated uncertainty in R0 by sampling from the posterior distribution of *r* 500 times and re-calculating the equation for R0 each time. We did this under three scenarios of generation time (4, 6, or 7 days). These were chosen based on Park et al. (2020) who estimated a generation time for COVID-19 of 4-8 days - https://www.mdpi.com/2077-0383/9/4/967. The table below shows the estimated R0 under three assumptions of generation time. Five hundred samples from these values were entered into the following SIR model:
  
-```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 #extract slope mean and CI and estimate R0 from equation above
 posts <- as_tibble(posterior_samples(lin_reg)) %>% 
   rename(r = b_date_num) %>% 
@@ -130,7 +128,11 @@ r0_mean_sd <- posts %>%
   group_by(generation_time) %>% 
   summarize(mean = round(mean(R0),2),
             sd = round(sd(R0),2))
-r0_mean_sd
+
+kable_styling(kable(r0_mean_sd, caption = "Table 1. R0 values and generation times (days) used to fit the SIR model.", 
+      format = "pandoc"),full_width = F) %>%
+   column_spec(column = 1:2, width = "3in") %>%
+   kable_styling(c("bordered", "condensed"), full_width = F)
 ```
 
 $$\frac{dS}{dt} = \frac{\beta*S*I}N$$
@@ -278,25 +280,6 @@ d7 <- d4 %>% mutate(gt = 7)
 
 sd_covid_plot_data <- bind_rows(d4,d6,d7) %>% 
   mutate(generation_time = paste(gt,"day generation time"))
-
-#max_I_time 
-all_sims %>% 
-  filter(variable == "I") %>% 
-  group_by(gt, date) %>%
-  summarize(mean = mean(value)) %>% 
-  filter(mean == max(mean))
-
-
-#max_hosp_time 
-all_hosp %>% 
-  group_by(date, medical_need, generation_time) %>%
-  mutate(number = value*884235) %>% 
-  summarize(number = mean(number)) %>% 
-  drop_na(number) %>% 
-  group_by(medical_need, generation_time) %>%  
-  filter(number == max(number))
-  
-  
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.height=7, fig.width=7}
@@ -437,7 +420,7 @@ The plot on the bottom shows the predicted *cumulative* number of beds compared 
 *(sources: https://apps.sd.gov/ph04lassnet/rptPH04LicenseList.Aspx and https://doh.sd.gov/providers/preparedness/hospital-preparedness/system/bed-avail.aspx)
 
 The model with a 7-day generation time appears to best match the actual hospitalization data. It indicates that peak resource use will occur ~June 1 with the following needs: ~5900 hospital beds (95% CI: 4900 to 6900), ~2400 ICU beds (1990 to 2800), and ~1700 Ventilators (1400 to 1900).
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 beds_needed <- all_hosp %>% 
   filter(gt == 7) %>% 
   group_by(date, medical_need, gt) %>% 
@@ -458,7 +441,11 @@ beds_needed <- all_hosp %>%
 
 write.csv(beds_needed, file = here::here("data/beds_needed.csv"))
 
-beds_needed
+kable_styling(kable(beds_needed, caption = "Table 2. Estimated peak medical needs in South Dakota. Dates for peak need are currently projected as early June, 2020. ", format = "pandoc",
+      col.names = c("Need", "Mean", "Lower95", "Upper95")),
+      full_width = F) %>%
+   column_spec(column = 1:2, width = "3in") %>%
+   kable_styling(c("bordered", "condensed"), full_width = F)
 ```
 
 # Caveats

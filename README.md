@@ -80,9 +80,9 @@ samples from these values were entered into the following SIR model:
 
 | generation\_time | mean |   sd |
 | :--------------- | ---: | ---: |
-| GT4              | 1.50 | 0.03 |
-| GT6              | 1.74 | 0.05 |
-| GT7              | 1.87 | 0.06 |
+| GT4              | 1.49 | 0.03 |
+| GT6              | 1.73 | 0.05 |
+| GT7              | 1.85 | 0.06 |
 
 Table 1. R0 values and generation times (days) used to fit the SIR
 model.
@@ -128,9 +128,9 @@ hospitalization data. It indicates that peak resource use will occur
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 4803 |    3013 |    6125 |
-| ICU Beds      | 1951 |    1212 |    2479 |
-| Ventilators   | 1356 |     850 |    1718 |
+| Hospital Beds | 4559 |    2700 |    6154 |
+| ICU Beds      | 1851 |    1083 |    2496 |
+| Ventilators   | 1287 |     759 |    1727 |
 
 Table 2. Estimated peak medical needs in South Dakota. Dates for peak
 need are currently projected as early June, 2020.

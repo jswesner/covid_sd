@@ -25,6 +25,7 @@ We used the following equation to estimate R0 (eqn 3.1 in Wallinga and Lipsitch 
 
 $$R0 = 1 + r/b$$
 
+
 where 1/b is the generation time (aka serial interval) in days, and *r* is the slope of a linear regression between daily incidence and time. This approach is recommended during the initial phase of an epidemice when growth is approximately log-linear. 
 
 We estimated a posterior distribution of *r* using reported incidence data in the following regression:

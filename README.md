@@ -43,7 +43,7 @@ We used the following equation to estimate R0 (eqn 3.1 in Wallinga and
 Lipsitch 2007)
 <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1766383/?report=reader#!po=83.3333>:
 
-\[R0 = 1 + r/b\]
+![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
 where 1/b is the generation time (aka serial interval) in days, and *r*
 is the slope of a linear regression between daily incidence and time.
@@ -53,13 +53,13 @@ when growth is approximately log-linear.
 We estimated a posterior distribution of *r* using reported incidence
 data in the following regression:
 
-\[log(y_i) \sim N(\mu_i, \sigma)\] \[\mu_i = \alpha + \beta x_i\]
-\[\alpha \sim N(0,1)\] \[\beta \sim N(0,1)\]
-\[\sigma \sim HalfCauchy(0,1)\] where *log*(\(y_i\)) is log-transformed
-incidence on date \(i\), distributed as a normal distribution with a
-mean \(\mu_i\) and standard deviation \(\sigma\), \(\alpha\) is the
-intercept, \(\beta\) is the slope (aka *r*).The prior distributions for
-each parameter are below the regression equation.
+![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+where *log*(y*i*) is log-transformed incidence on date *i*, distributed
+as a normal distribution with a mean *mu\[i\]* and standard deviation
+*sigma*, *alpha* is the intercept, *beta* is the slope (aka *r*).The
+prior distributions for each parameter are below the regression
+equation.
 
 The outcome of that regression is below. It shows a clear dip in
 incidence over the last 3-4 days, though this has had a minimal effect
@@ -67,7 +67,7 @@ thus far on our estimates of *r*. More importantly, our main comparison
 to model fit is the number of cumulative hospitalizations, which
 continue to track the model predictions (scroll below for the graph).
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 We simulated uncertainty in R0 by sampling from the posterior
 distribution of *r* 500 times and re-calculating the equation for R0
@@ -87,18 +87,13 @@ samples from these values were entered into the following SIR model:
 Table 1. R0 values and generation times (days) used to fit the SIR
 model.
 
-\[\frac{dS}{dt} = \frac{\beta*S*I}N\]
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
-\[\frac{dI}{dt} = \frac{\beta*S*I}N - \gamma*I\]
+where gamma is 1/days\_infected, beta is gamma\*R0, days\_infect is 7,
+and N is S+I+R. We simulated 200 days of infection and assumed starting
+values for S = 0.99999, I = 0.000001, and R = 0.000009.
 
-\[\frac{dR}{dt} = \gamma*I\]
-
-where \(\gamma\) is 1/\(days_{infected}\), \(\beta\) is \(gamma\)\*R0,
-\(days_{infected}\) is 7, and \(N\) is \(S+I+R\). We simulated 200 days
-of infection and assumed starting values for S = 0.99999, I = 0.000001,
-and R = 0.000009.
-
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- --> The graphs
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- --> The graphs
 above show the outcome of the SIR model under 4, 6, or 7 day generation
 times. Lines are the mean predictions, shaded areas are the 2.5 and
 97.5% quantiles, and the dots are the reported data from SD DOH.
@@ -111,7 +106,7 @@ would need a ventilator. We also assumed a mean stays in the hospital
 system as a whole of 7, 8, or 10 days for hospitalization, ICU, and
 ventilator, respectively.
 
-![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 This plot shows the predicted number of hospital beds, ICU beds, and
 ventilators needed under each scenario. The horizontal black line shows
@@ -128,9 +123,9 @@ hospitalization data. It indicates that peak resource use will occur
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 4559 |    2700 |    6154 |
-| ICU Beds      | 1851 |    1083 |    2496 |
-| Ventilators   | 1287 |     759 |    1727 |
+| Hospital Beds | 4632 |    2585 |    6109 |
+| ICU Beds      | 1882 |    1065 |    2486 |
+| Ventilators   | 1309 |     746 |    1720 |
 
 Table 2. Estimated peak medical needs in South Dakota. Dates for peak
 need are currently projected as early June, 2020.

@@ -22,22 +22,6 @@ Because our estimates of R0 are derived from reported incidence data, they refle
 
 # Derivation of R0
 We used the following equation to estimate R0 (eqn 3.1 in Wallinga and Lipsitch 2007) https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1766383/?report=reader#!po=83.3333:
-
-$$R0 = 1 + r/b$$
-
-where 1/b is the generation time (aka serial interval) in days, and *r* is the slope of a linear regression between daily incidence and time. This approach is recommended during the initial phase of an epidemice when growth is approximately log-linear. 
-
-We estimated a posterior distribution of *r* using reported incidence data in the following regression:
-
-$$log(y_i) \sim N(\mu_i, \sigma)$$
-$$\mu_i = \alpha + \beta x_i$$
-$$\alpha \sim N(0,1)$$
-$$\beta \sim N(0,1)$$
-$$\sigma \sim HalfCauchy(0,1)$$
-where *log*($y_i$) is log-transformed incidence on date $i$, distributed as a normal distribution with a mean $\mu_i$ and standard deviation $\sigma$, $\alpha$ is the intercept, $\beta$ is the slope (aka *r*).The prior distributions for each parameter are below the regression equation. 
-
-The outcome of that regression is below. It shows a clear dip in incidence over the last 3-4 days, though this has had a minimal effect thus far on our estimates of *r*. More importantly, our main comparison to model fit is the number of cumulative hospitalizations, which continue to track the model predictions (scroll below for the graph).
-
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(tidyverse)
 library(here)
@@ -55,6 +39,43 @@ library(viridis)
 library(brms)
 library(kableExtra)
 ```
+
+
+```{r echo=FALSE, fig.height=1, message=TRUE, warning=TRUE, paged.print=TRUE}
+ggplot() + 
+annotate("text", x=.5, y=0.5, label="R0 == 1  +  frac(italic(r),italic(b))", parse=TRUE, family = "serif") +
+  theme_void() +
+  labs(title = "R0 formula") +
+  theme(text = element_text(family = "serif"))
+```
+
+where 1/b is the generation time (aka serial interval) in days, and *r* is the slope of a linear regression between daily incidence and time. This approach is recommended during the initial phase of an epidemice when growth is approximately log-linear. 
+
+We estimated a posterior distribution of *r* using reported incidence data in the following regression:
+
+
+```{r echo=FALSE, fig.height=2, message=TRUE, warning=TRUE, paged.print=TRUE}
+library(tidyverse)
+ggplot() +
+  annotate("text", x = 0.5, y = 0.6,
+                   label = "italic(log)(y[i]) %~% italic(N)(mu[i], sigma)", parse = T, family = "serif") +
+  annotate("text", x = 0.5, y = 0.55,
+           label = "italic(mu[i]) == italic(alpha) + italic(beta)*italic(x)[i]", parse = T, family = "serif") +
+  annotate("text", x = 0.5, y = 0.5,
+           label = "italic(alpha) %~% italic(N)(0,1)", parse = T, family = "serif") +
+  annotate("text", x = 0.5, y = 0.45,
+           label = "italic(beta) %~% italic(N)(0,1)", parse = T, family = "serif") +
+  annotate("text", x = 0.5, y = 0.4,
+           label = "sigma %~% italic(HalfCauchy)(0,1)", parse = T, family = "serif") +
+  coord_cartesian(ylim = c(0.4, .62)) +
+  labs(title = "Regression formula:") +
+  theme_void()
+```
+
+where *log*(y*i*) is log-transformed incidence on date *i*, distributed as a normal distribution with a mean *mu[i]* and standard deviation *sigma*, *alpha* is the intercept, *beta* is the slope (aka *r*).The prior distributions for each parameter are below the regression equation. 
+
+The outcome of that regression is below. It shows a clear dip in incidence over the last 3-4 days, though this has had a minimal effect thus far on our estimates of *r*. More importantly, our main comparison to model fit is the number of cumulative hospitalizations, which continue to track the model predictions (scroll below for the graph).
+
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #Load current SD covid data and plot it
@@ -129,13 +150,21 @@ kable_styling(kable(r0_mean_sd, caption = "Table 1. R0 values and generation tim
    kable_styling(c("bordered", "condensed"), full_width = F)
 ```
 
-$$\frac{dS}{dt} = \frac{\beta*S*I}N$$
+```{r echo=FALSE, fig.height=2, message=TRUE, warning=TRUE, paged.print=TRUE}
+ggplot() +
+  annotate("text", x = 0.5, y = 0.6,
+           label = "frac(italic(dS), italic(dt)) ==  frac(italic(beta)*S*I,N)", parse = T, family = "serif") +
+  annotate("text", x = 0.5, y = 0.55,
+           label = "frac(italic(dI), italic(dt))  ==  frac(italic(beta)*S*I,N) - gamma*I", parse = T, family = "serif") +
+  annotate("text", x = 0.5, y = 0.5,
+           label = "frac(italic(dR), italic(dt)) == gamma*I", parse = T, family = "serif") +
+  coord_cartesian(ylim = c(0.48, .62)) +
+  labs(title = "SIR formula:") +
+  theme_void() +
+  theme(text = element_text(family = "serif"))
+```
 
-$$\frac{dI}{dt} = \frac{\beta*S*I}N - \gamma*I$$
-
-$$\frac{dR}{dt} = \gamma*I$$
-
-where $\gamma$ is 1/$days_{infected}$, $\beta$ is $gamma$*R0, $days_{infected}$ is 7, and $N$ is $S+I+R$. We simulated 200 days of infection and assumed starting values for S = 0.99999, I = 0.000001, and R = 0.000009. 
+where gamma is 1/days_infected, beta is gamma*R0, days_infect is 7, and N is S+I+R. We simulated 200 days of infection and assumed starting values for S = 0.99999, I = 0.000001, and R = 0.000009. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #SIR model

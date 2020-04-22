@@ -331,7 +331,7 @@ zoomed_plot <- all_sims %>%
 
 both <- plot_grid(full_plot, zoomed_plot, ncol = 1)
 both
-ggsave(both, file = here::here("plots/jeff_cumulative_cases.jpg"), width = 8, height = 8)
+ggsave(both, file = here::here("plots/cumulative_cases.jpg"), width = 8, height = 8)
 ```
 The graphs above show the outcome of the SIR model under 4, 6, or 7 day generation times. Lines are the mean predictions, shaded areas are the 2.5 and 97.5% quantiles, and the dots are the reported data from SD DOH. 
 
@@ -401,7 +401,7 @@ hosp_zoomed <- all_hosp %>%
 
 both_hosp <- plot_grid(hosp, hosp_zoomed, ncol = 1, rel_heights = c(1,0.8))
 both_hosp
-ggsave(both_hosp, file = here::here("plots/jeff_hosp.jpg"), width = 8, height = 8)
+ggsave(both_hosp, file = here::here("plots/both_hosp.jpg"), width = 8, height = 8)
 ```
 
 This plot shows the predicted number of hospital beds, ICU beds, and ventilators needed under each scenario. The horizontal black line shows the total number of hospital beds in South Dakota*. 
@@ -412,22 +412,25 @@ The plot on the bottom shows the predicted *cumulative* number of beds compared 
 The model with a 7-day generation time appears to best match the actual hospitalization data. It indicates that peak resource use will occur ~June 1 with numbers indicated in Table 2.
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 beds_needed <- all_hosp %>% 
-  filter(gt == 7) %>% 
-  group_by(date, medical_need, gt) %>% 
+  group_by(date, medical_need, generation_time) %>% 
   mutate(number = value*884235) %>% 
   drop_na(number) %>% 
-  group_by(R0, medical_need, gt) %>% 
-  mutate(max_beds = max(number)) %>% 
-  distinct(max_beds) %>% 
-  group_by(medical_need, gt) %>% 
-  summarize(mean_max = round(mean(max_beds),0),
-            lci_max = round(quantile(max_beds, probs = 0.025),0),
-            uci_max = round(quantile(max_beds, probs = 0.975),0)) %>% 
-  select(-gt) %>% 
+  summarize(mean = mean(number),
+            lci = quantile(number, probs = 0.025),
+            uci = quantile(number, probs = 0.975)) %>% 
+  ungroup() %>% 
+  group_by(medical_need, generation_time) %>% 
+  mutate(mean = round(max(mean),0),
+         lower95 = round(max(lci),0),
+         upper95 = round(max(uci),0)) %>% 
+  distinct(medical_need, generation_time, .keep_all = T) %>% 
+  filter(grepl("7", generation_time)) %>% 
+  select(medical_need, mean, lower95, upper95) %>% 
   ungroup() %>% 
   mutate(medical_need = case_when(medical_need == "hospital_beds" ~ "Hospital Beds",
                                   medical_need == "icu_beds" ~ "ICU Beds",
-                                  TRUE ~ "Ventilators"))
+                                  TRUE ~ "Ventilators")) %>% 
+  select(-generation_time)
 
 write.csv(beds_needed, file = here::here("data/beds_needed.csv"))
 

@@ -103,11 +103,12 @@ mean_r <- round(mean(posts$b_date_num), 2)
 sd_r <- round(sd(posts$b_date_num),2)
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.width=4, fig.height = 4}
+```{r echo=FALSE, fig.height=4, fig.width=4, message=FALSE, warning=FALSE, paged.print=FALSE}
 fit_mod <- fitted(lin_reg) %>% 
   as_tibble() %>% 
   clean_names() %>% 
-  mutate(date = sd_covid_data %>% filter(date_num > 0) %>% select(date) %>% pull())
+  rowid_to_column() %>% 
+  mutate(date = as_date(rowid + 18330) )
 
 
 plot_r <- fit_mod %>% 
@@ -121,9 +122,9 @@ plot_r <- fit_mod %>%
        subtitle = bquote('slope'~italic("r = ")~.(mean_r)~"\u00B1"~.(sd_r)~'(mean \u00B1 sd)'))  +
   theme_classic()
 
-plot_r
-
 ggsave(plot_r, file = here::here("plots/plot_r.jpg"), width = 6, height = 6)
+
+plot_r
 ```
 
 We simulated uncertainty in R0 by sampling from the posterior distribution of *r* 500 times and re-calculating the equation for R0 each time. We did this under three scenarios of generation time (4, 6, or 7 days). These were chosen based on Park et al. (2020) who estimated a generation time for COVID-19 of 4-8 days - https://www.mdpi.com/2077-0383/9/4/967. The table below shows the estimated R0 under three assumptions of generation time. Five hundred samples from these values were entered into the following SIR model:

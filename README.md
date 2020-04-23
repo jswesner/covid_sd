@@ -123,9 +123,9 @@ hospitalization data. It indicates that peak resource use will occur
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 4632 |    2585 |    6109 |
-| ICU Beds      | 1882 |    1065 |    2486 |
-| Ventilators   | 1309 |     746 |    1720 |
+| Hospital Beds | 4555 |    2691 |    6181 |
+| ICU Beds      | 1850 |    1086 |    2509 |
+| Ventilators   | 1287 |     766 |    1737 |
 
 Table 2. Estimated peak medical needs in South Dakota. Dates for peak
 need are currently projected as early June, 2020.

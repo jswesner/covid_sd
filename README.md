@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-April 2020
+April 23, 2020
 
 # Authors
 
@@ -80,9 +80,9 @@ samples from these values were entered into the following SIR model:
 
 | generation\_time | mean |   sd |
 | :--------------- | ---: | ---: |
-| GT4              | 1.49 | 0.03 |
-| GT6              | 1.73 | 0.05 |
-| GT7              | 1.85 | 0.06 |
+| GT4              | 1.48 | 0.03 |
+| GT6              | 1.71 | 0.05 |
+| GT7              | 1.83 | 0.06 |
 
 Table 1. R0 values and generation times (days) used to fit the SIR
 model.
@@ -123,9 +123,9 @@ hospitalization data. It indicates that peak resource use will occur
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 4555 |    2691 |    6181 |
-| ICU Beds      | 1850 |    1086 |    2509 |
-| Ventilators   | 1287 |     766 |    1737 |
+| Hospital Beds | 4476 |    2343 |    5884 |
+| ICU Beds      | 1818 |     947 |    2385 |
+| Ventilators   | 1265 |     666 |    1651 |
 
 Table 2. Estimated peak medical needs in South Dakota. Dates for peak
 need are currently projected as early June, 2020.

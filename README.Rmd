@@ -1,6 +1,6 @@
 ---
 title: "COVID-19 modeling in South Dakota"
-date: "April 2020"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output: github_document
 ---
 # Authors

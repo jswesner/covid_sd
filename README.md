@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-April 23, 2020
+April 25, 2020
 
 # Authors
 
@@ -61,11 +61,7 @@ as a normal distribution with a mean *mu\[i\]* and standard deviation
 prior distributions for each parameter are below the regression
 equation.
 
-The outcome of that regression is below. It shows a clear dip in
-incidence over the last 3-4 days, though this has had a minimal effect
-thus far on our estimates of *r*. More importantly, our main comparison
-to model fit is the number of cumulative hospitalizations, which
-continue to track the model predictions (scroll below for the graph).
+The outcome of that regression is below.
 
 ![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
@@ -80,9 +76,9 @@ samples from these values were entered into the following SIR model:
 
 | generation\_time | mean |   sd |
 | :--------------- | ---: | ---: |
-| GT4              | 1.48 | 0.03 |
-| GT6              | 1.71 | 0.05 |
-| GT7              | 1.83 | 0.06 |
+| GT4              | 1.45 | 0.03 |
+| GT6              | 1.68 | 0.05 |
+| GT7              | 1.79 | 0.05 |
 
 Table 1. R0 values and generation times (days) used to fit the SIR
 model.
@@ -93,10 +89,11 @@ where gamma is 1/days\_infected, beta is gamma\*R0, days\_infect is 7,
 and N is S+I+R. We simulated 200 days of infection and assumed starting
 values for S = 0.99999, I = 0.000001, and R = 0.000009.
 
-![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- --> The graphs
-above show the outcome of the SIR model under 4, 6, or 7 day generation
-times. Lines are the mean predictions, shaded areas are the 2.5 and
-97.5% quantiles, and the dots are the reported data from SD DOH.
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+The graphs above show the outcome of the SIR model under 4, 6, or 7 day
+generation times. Lines are the mean predictions, shaded areas are the
+2.5 and 97.5% quantiles, and the dots are the reported data from SD DOH.
 
 \#Hospital Beds, ICU beds, and Ventilators From the predictions of cases
 above, we estimated the number of hospital beds, ICU beds, and
@@ -123,9 +120,9 @@ hospitalization data. It indicates that peak resource use will occur
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 4476 |    2343 |    5884 |
-| ICU Beds      | 1818 |     947 |    2385 |
-| Ventilators   | 1265 |     666 |    1651 |
+| Hospital Beds | 4265 |    2714 |    5539 |
+| ICU Beds      | 1733 |    1089 |    2245 |
+| Ventilators   | 1206 |     767 |    1556 |
 
 Table 2. Estimated peak medical needs in South Dakota. Dates for peak
 need are currently projected as early June, 2020.

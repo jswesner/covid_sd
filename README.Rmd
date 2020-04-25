@@ -74,9 +74,7 @@ ggplot() +
 
 where *log*(y*i*) is log-transformed incidence on date *i*, distributed as a normal distribution with a mean *mu[i]* and standard deviation *sigma*, *alpha* is the intercept, *beta* is the slope (aka *r*).The prior distributions for each parameter are below the regression equation. 
 
-The outcome of that regression is below. It shows a clear dip in incidence over the last 3-4 days, though this has had a minimal effect thus far on our estimates of *r*. More importantly, our main comparison to model fit is the number of cumulative hospitalizations, which continue to track the model predictions (scroll below for the graph).
-
-
+The outcome of that regression is below.
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #Load current SD covid data and plot it
 sd_covid_data <- read.csv(here::here("data/data_kelo.csv")) %>% 
@@ -95,7 +93,8 @@ sd_covid_data <- read.csv(here::here("data/data_kelo.csv")) %>%
 lin_reg <- brm(log(incidence1) ~ date_num, data = sd_covid_data,
                family = gaussian(),
                prior = c(prior(normal(0,1), class = "Intercept"),
-                         prior(normal(0,0.5), class = "b")),
+                         prior(normal(0,0.5), class = "b"),
+                         prior(cauchy(0,1), class = "sigma")),
                cores = 4, sample_prior = "yes")
 
 posts <- posterior_samples(lin_reg)
@@ -363,6 +362,7 @@ both <- plot_grid(full_plot, zoomed_plot, ncol = 1)
 both
 ggsave(both, file = here::here("plots/cumulative_cases.jpg"), width = 8, height = 8)
 ```
+
 The graphs above show the outcome of the SIR model under 4, 6, or 7 day generation times. Lines are the mean predictions, shaded areas are the 2.5 and 97.5% quantiles, and the dots are the reported data from SD DOH. 
 
 #Hospital Beds, ICU beds, and Ventilators

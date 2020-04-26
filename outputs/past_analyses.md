@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-April 26, 2020
+April 25, 2020
 
 # Authors
 
@@ -18,13 +18,6 @@ Mathematical Sciences, <sup>3</sup>Department of Computer Science
 
 To predict hospital bed needs, ICU needs, and ventilator needs in South
 Dakota due to COVID-19.
-
-# Updates
-
-\*We updated the model from previous versions by 1) varying generation
-times in each simulation and 2) varying hospitalization rates, icu
-rates, and ventilator rates in each simulation. Previous versions of
-this model assumed fixed rates for these parameters.
 
 # General Approach and Justification
 
@@ -72,29 +65,22 @@ The outcome of that regression is below.
 
 ![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
-We estimated R0 by fitting the R0 equation above to 4000 iterations of
-the posterior distribution of *r*. To include uncertainty in generation
-time, each estimate of *r* was multiplied by a different generation
-time, drawn from a uniform distribution with generation times between
-4-8 days. These bounds were chosen based on Park et al. (2020) who
-estimated a generation time for COVID-19 of 4-8 days -
-<https://www.mdpi.com/2077-0383/9/4/967>.
+We simulated uncertainty in R0 by sampling from the posterior
+distribution of *r* 500 times and re-calculating the equation for R0
+each time. We did this under three scenarios of generation time (4, 6,
+or 7 days). These were chosen based on Park et al. (2020) who estimated
+a generation time for COVID-19 of 4-8 days -
+<https://www.mdpi.com/2077-0383/9/4/967>. The table below shows the
+estimated R0 under three assumptions of generation time. Five hundred
+samples from these values were entered into the following SIR model:
 
-To apply this uncertainty to our predictions, we sampled 1000 values of
-R0 from the mean and sd and ran the SIR. This generated 1000 scenarios
-of disease progression. We assumed a starting date for infection in
-South Dakota of 2020-02-24. This was chosen because it is two weeks
-earlier than the first reported cases on 2020-03-10. All SIR models are
-highly sensitive to starting dates, particularly when predicting the
-timing of peak infection. The starting date in our model is somewhat
-arbritray, but assumes that the first report of tested cases must have
-come after the actual initial infectsion from COVID-19.
+| generation\_time | mean |   sd |
+| :--------------- | ---: | ---: |
+| GT4              | 1.45 | 0.03 |
+| GT6              | 1.68 | 0.05 |
+| GT7              | 1.79 | 0.05 |
 
-| mean |   sd |
-| ---: | ---: |
-| 1.68 | 0.14 |
-
-Table 1. R0 mean and standard deviation sampled from to fit the SIR
+Table 1. R0 values and generation times (days) used to fit the SIR
 model.
 
 ![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
@@ -105,67 +91,61 @@ values for S = 0.99999, I = 0.000001, and R = 0.000009.
 
 ![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
-The graphs above show the outcome of the SIR model. Lines are the mean
-predictions, shaded areas are, from inside to outside, 50%, 75%, and 95%
-quantiles, and the dots are the reported data from SD DOH.
+The graphs above show the outcome of the SIR model under 4, 6, or 7 day
+generation times. Lines are the mean predictions, shaded areas are the
+2.5 and 97.5% quantiles, and the dots are the reported data from SD DOH.
 
 \#Hospital Beds, ICU beds, and Ventilators From the predictions of cases
 above, we estimated the number of hospital beds, ICU beds, and
-ventilators needed. To do this, we assumed a mean hospitalization rate
-of 3.5% with a standard deviation of 1.5%. These values were
-parameterized as a beta distribution, from which we randomly assigned a
-hospitalization rate to each of the simulations of infections from the
-SIR. These values were chosen to capture the large uncertainty in
-hospitalization rates that may range on any given day between \~1% to 6%
-of cases according our model. Rates were ICU’s and ventilators were
-similarly determined using the following distributions: ICUs (1.5% +/-
-0.5%), Ventilators (0.8% +/- 0.1%). We also assumed a mean stays in the
-hospital system as a whole of 7, 8, or 10 days for hospitalization, ICU,
-and ventilators, respectively.
+ventilators needed by assuming that 4% of cases would need
+hospitalization, 1.5% of cases would need an ICU bed, and 1.05% of cases
+would need a ventilator. We also assumed a mean stays in the hospital
+system as a whole of 7, 8, or 10 days for hospitalization, ICU, and
+ventilator, respectively.
 
 ![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 This plot shows the predicted number of hospital beds, ICU beds, and
-ventilators over time. The horizontal black line shows the total number
-of hospital beds in South Dakota\*.
+ventilators needed under each scenario. The horizontal black line shows
+the total number of hospital beds in South Dakota\*.
 
 The plot on the bottom shows the predicted *cumulative* number of beds
 compared to the actual cumulative hospital beds used. \*(sources:
 <https://apps.sd.gov/ph04lassnet/rptPH04LicenseList.Aspx> and
 <https://doh.sd.gov/providers/preparedness/hospital-preparedness/system/bed-avail.aspx>)
 
-The model indicates that resource needs will peak with numbers indicated
-in Table 2.
+The model with a 7-day generation time appears to best match the actual
+hospitalization data. It indicates that peak resource use will occur
+\~June 1 with numbers indicated in Table 2.
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 1778 |     146 |    6600 |
-| ICU Beds      |  958 |      95 |    3101 |
-| Ventilators   |  665 |      76 |    1712 |
+| Hospital Beds | 1599 |     985 |    2082 |
+| ICU Beds      |  650 |     395 |     844 |
+| Ventilators   |  452 |     276 |     586 |
 
-Table 2. Estimated peak medical needs in South Dakota.
+Table 2. Estimated peak medical needs in South Dakota. Dates for peak
+need are currently projected as early June, 2020.
 
 # Caveats
 
-Our main sources of uncertainty in these models are generation time, R0,
-and rates of hospitalization, ICU, and ventilator needs. All projections
-indicate that SD is at the very early stages of predicted exponential
-growth. That makes predictions in the future difficult to state with any
-certainty. As data are released, we will continue to update these
-projections semi-daily.
+Our main source of uncertainty in these models is generation time and
+R0, but all projections indicate that SD is at the very early stages of
+predicted exponential growth. That makes predictions in the future
+difficult to state with any certainty. As data are released, we will
+continue to update these projections semi-daily.
 
 At present, our data treat South Dakota as a homogenous mixture, though
 as of this writing most of the cases are concentrated in Minnehaha
 county. Future models that include regional projections may be
 warranted.
 
-Projections also assume single distributions of hospitalization, ICU,
-and ventilator rates. This is a simplification that likely leads to
-conservative estimates in our model, which does not currently account
-for the fact that older infected persons are more likely to require
-hospitalization, ICU, or ventilator support at rates exceeding the
-population average. Future age-structured projections will help to
-alleviate this uncertainty.
+Projections also assume a fixed hospitalization rate. This is a
+simplification that likely leads to conservative estimates in our model,
+which does not currently account for the fact that older infected
+persons are more likely to require hospitalization, ICU, or ventilator
+support at rates above 4%. Future age-structured projections will help
+to alleviate this uncertainty.
 
 # Notes
 

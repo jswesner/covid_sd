@@ -139,9 +139,9 @@ in Table 2.
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 1778 |     146 |    6600 |
-| ICU Beds      |  958 |      95 |    3101 |
-| Ventilators   |  665 |      76 |    1712 |
+| Hospital Beds | 1779 |     148 |    6509 |
+| ICU Beds      |  954 |      98 |    3052 |
+| Ventilators   |  660 |      75 |    1752 |
 
 Table 2. Estimated peak medical needs in South Dakota.
 

@@ -1,0 +1,4 @@
+"date_prediction_made","peak_date","medical_need","mean","sd","team","model_source","notes"
+2020-04-26,2020-08-04,"icu_beds",1021.80057583825,385.61987500204,"Wesner/Van Peursem/Flores/Lio","https://github.com/jswesner/covid_sd","lowered hosp rate to 3.5 average. Simulated generation times from 4-8 days"
+2020-04-26,2020-08-07,"hospital_beds",1947.31463656237,940.688121498342,"Wesner/Van Peursem/Flores/Lio","https://github.com/jswesner/covid_sd","lowered hosp rate to 3.5 average. Simulated generation times from 4-8 days"
+2020-04-26,2020-08-10,"ventilators",705.484960633124,118.075285103029,"Wesner/Van Peursem/Flores/Lio","https://github.com/jswesner/covid_sd","lowered hosp rate to 3.5 average. Simulated generation times from 4-8 days"

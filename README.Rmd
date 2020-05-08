@@ -16,12 +16,14 @@ University of South Dakota
 To predict hospital bed needs, ICU needs, and ventilator needs in South Dakota due to COVID-19. 
 
 # Updates
-*We updated the model from previous versions by 1) varying generation times in each simulation and 2) varying hospitalization rates, icu rates, and ventilator rates in each simulation. Previous versions of this model assumed fixed rates for these parameters. 
+*We updated the model from previous versions by 1) varying generation times in each simulation and 2) varying hospitalization rates, icu rates, and ventilator rates in each simulation. Previous versions of this model assumed fixed rates for these parameters. Future updates will be also include varying R0, since it has become clear that the initial exponential growth in cases has slowed (but then risen again most recently). 
 
 # General Approach and Justification
 We estimated R0 from current incidence rates in South Dakota. We then fit SIR models using our estimates of R0 and compared model predictions to actual values of hospitalizations reported by the South Dakota Department of Health (data source: https://www.keloland.com/keloland-com-original/why-south-dakotas-number-of-deaths-isnt-always-up-to-date/. We chose this approach because it does not rely on external estimates of R0, but instead derives them from data specific to South Dakota.
 
-Because our estimates of R0 are derived from reported incidence data, they reflect any day-to-day adjustments in R0 due to social distancing (with an unknown lag time). In other words, as social distancing reduces incidence, that will be reflected in our estimates of R0. It is worth noting that reported incidence is almost certainly lower than true incidence. However, this does not alter our estimates of R0, assuming that the rate of underreporting is constant across time. 
+Because our estimates of R0 are derived from reported incidence data, they reflect any day-to-day adjustments in R0 due to social distancing (with an unknown lag time). In other words, as social distancing reduces incidence, that will be reflected in our estimates of R0. It is worth noting that reported incidence is almost certainly lower than true incidence. However, this does not alter our estimates of R0, assuming that the rate of underreporting is constant across time.
+
+At present, we are limiting the estimate of R0 to the first 50 days of incidence data. That captures the positive growth period in incidence so far, but will need to be adjusted for future variations.
 
 # Derivation of R0
 We used the following equation to estimate R0 (eqn 3.1 in Wallinga and Lipsitch 2007) https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1766383/?report=reader#!po=83.3333:
@@ -92,8 +94,20 @@ sd_covid_data <- read.csv(here::here("data/data_kelo.csv")) %>%
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+#create dataset of early incidence (up to May 1)
+sd_covid_data_short <- read.csv(here::here("data/data_kelo.csv")) %>% 
+  clean_names() %>% 
+  mutate(date_num = as.numeric(mdy(date)) - 18330,
+         date = mdy(date),
+         source = "SD_DOH via Keloland news",
+         incidence = positive_cases - lag(positive_cases),
+         hospitalized = parse_number(as.character(hospitalized)),
+         incidence1 = incidence + 1) %>%   ##adds 1 to all incidence to allow for zeros in log-linear regression
+filter(date_num <= 50)
+
 #Run linear regression
-lin_reg <- brm(log(incidence1) ~ date_num, data = sd_covid_data,
+lin_reg <- brm(log(incidence1) ~ date_num, data = sd_covid_data_short,
                family = gaussian(),
                prior = c(prior(normal(0,1), class = "Intercept"),
                          prior(normal(0,0.5), class = "b"),
@@ -278,7 +292,7 @@ all_hosp <- as_tibble(m_test) %>%
   group_by(iter) %>% 
   mutate(i_cumulative = 1 - min(R) - S,
          hosp_rate = rbeta(201, alpha_beta, beta_beta),
-         hosp_length_days = 7,
+         hosp_length_days = 4,
          icu_hosp_number = 1:201,
          icu_rate_of_hosp_rate = rbeta(201, alpha_beta_icu, beta_beta_icu),
          icu_length_days = 8,
@@ -352,8 +366,8 @@ zoomed_plot <- m_test %>%
              aes(x = date, y = positive_cases), shape = 21,
              fill = "yellow", size = 2) + 
   scale_shape_manual(values = c(21,22,24)) + 
-  scale_x_date(limits = ymd(c("2020-02-22", "2020-05-01"))) +
-  coord_cartesian(ylim = c(0,3000)) +
+  scale_x_date(limits = ymd(c("2020-02-22", "2020-7-01"))) +
+  coord_cartesian(ylim = c(0,5000)) +
   labs(title = "1000 SIR simulations of cumulative COVID-19 cases",
        subtitle = "(purple = simulation of actual cases, dots = positive tests)",
        y = "Cumulative cases",
@@ -430,8 +444,8 @@ hosp_zoomed <- cum_hosp %>%
              aes(x = date, y = hospitalized),
              shape = 21, fill = "yellow",
              size = 2) +
-  scale_x_date(limits = ymd(c("2020-03-10", "2020-05-15"))) +
-  coord_cartesian(ylim = c(0,200)) +
+  scale_x_date(limits = ymd(c("2020-03-01", "2020-08-15"))) +
+  coord_cartesian(ylim = c(0,500)) +
   # facet_wrap(~generation_time) +
   labs(title = "How well do models match current data?",
        subtitle = "(dots = real data)",

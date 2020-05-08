@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-April 26, 2020
+May 08, 2020
 
 # Authors
 
@@ -24,7 +24,10 @@ Dakota due to COVID-19.
 \*We updated the model from previous versions by 1) varying generation
 times in each simulation and 2) varying hospitalization rates, icu
 rates, and ventilator rates in each simulation. Previous versions of
-this model assumed fixed rates for these parameters.
+this model assumed fixed rates for these parameters. Future updates will
+be also include varying R0, since it has become clear that the initial
+exponential growth in cases has slowed (but then risen again most
+recently).
 
 # General Approach and Justification
 
@@ -43,6 +46,10 @@ incidence, that will be reflected in our estimates of R0. It is worth
 noting that reported incidence is almost certainly lower than true
 incidence. However, this does not alter our estimates of R0, assuming
 that the rate of underreporting is constant across time.
+
+At present, we are limiting the estimate of R0 to the first 50 days of
+incidence data. That captures the positive growth period in incidence so
+far, but will need to be adjusted for future variations.
 
 # Derivation of R0
 
@@ -92,7 +99,7 @@ come after the actual initial infectsion from COVID-19.
 
 | mean |   sd |
 | ---: | ---: |
-| 1.68 | 0.14 |
+| 1.61 | 0.13 |
 
 Table 1. R0 mean and standard deviation sampled from to fit the SIR
 model.
@@ -139,9 +146,9 @@ in Table 2.
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 1779 |     148 |    6509 |
-| ICU Beds      |  954 |      98 |    3052 |
-| Ventilators   |  660 |      75 |    1752 |
+| Hospital Beds | 1470 |     137 |    5461 |
+| ICU Beds      |  789 |      84 |    2572 |
+| Ventilators   |  538 |      67 |    1504 |
 
 Table 2. Estimated peak medical needs in South Dakota.
 

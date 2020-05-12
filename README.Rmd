@@ -119,7 +119,7 @@ mean_r <- round(mean(posts$b_date_num), 2)
 sd_r <- round(sd(posts$b_date_num),2)
 ```
 
-```{r echo=FALSE, fig.height=4, fig.width=4, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r echo=FALSE, fig.height=4, fig.width=4, message=FALSE, warning=FALSE, paged.print=FALSE, cache = T}
 fit_mod <- fitted(lin_reg) %>% 
   as_tibble() %>% 
   clean_names() %>% 
@@ -250,20 +250,20 @@ test_sims <- m_test %>%
 
 #get parameters of hosp, icu, and vent rate to enter into a beta distibution
 
-hosp_rate_mean = 0.03
-hosp_rate_sd = 0.015
+hosp_rate_mean = 0.01
+hosp_rate_sd = 0.005
 alpha_beta = (hosp_rate_mean^2 - hosp_rate_mean^3 - hosp_rate_mean*(hosp_rate_sd^2))/hosp_rate_sd^2
 beta_beta = (hosp_rate_mean - 2*hosp_rate_mean^2 + hosp_rate_mean^3 - hosp_rate_sd^2 + hosp_rate_mean*hosp_rate_sd^2)/hosp_rate_sd^2
 
 
-icu_rate_mean = 0.015
-icu_rate_sd = 0.005
+icu_rate_mean = 0.0015
+icu_rate_sd = 0.0005
 alpha_beta_icu = (icu_rate_mean^2 - icu_rate_mean^3 - icu_rate_mean*(icu_rate_sd^2))/icu_rate_sd^2
 beta_beta_icu = (icu_rate_mean - 2*icu_rate_mean^2 + icu_rate_mean^3 - icu_rate_sd^2 + icu_rate_mean*icu_rate_sd^2)/icu_rate_sd^2
 
 
-vent_rate_mean = 0.0084
-vent_rate_sd = 0.001
+vent_rate_mean = 0.00084
+vent_rate_sd = 0.0001
 alpha_beta_vent = (vent_rate_mean^2 - vent_rate_mean^3 - vent_rate_mean*(vent_rate_sd^2))/vent_rate_sd^2
 beta_beta_vent = (vent_rate_mean - 2*vent_rate_mean^2 + vent_rate_mean^3 - vent_rate_sd^2 + vent_rate_mean*vent_rate_sd^2)/vent_rate_sd^2
 
@@ -292,15 +292,15 @@ all_hosp <- as_tibble(m_test) %>%
   group_by(iter) %>% 
   mutate(i_cumulative = 1 - min(R) - S,
          hosp_rate = rbeta(201, alpha_beta, beta_beta),
-         hosp_length_days = 4,
+         hosp_length_days = 6,
          icu_hosp_number = 1:201,
          icu_rate_of_hosp_rate = rbeta(201, alpha_beta_icu, beta_beta_icu),
          icu_length_days = 8,
          vent_rate_of_icu_rate = rbeta(201, alpha_beta_vent, beta_beta_vent),
          vent_length_days = 10) %>% 
-  mutate(hospital_beds = hosp_rate*(i_cumulative - lag(i_cumulative , 7)) + 
-           icu_rate_of_hosp_rate*(lag(i_cumulative , 7) - lag(i_cumulative , 8)),
-         icu_beds = icu_rate_of_hosp_rate*(i_cumulative - lag(i_cumulative , 8)),
+  mutate(hospital_beds = hosp_rate*(i_cumulative - lag(i_cumulative , 6)) + 
+           icu_rate_of_hosp_rate*(lag(i_cumulative , 6) - lag(i_cumulative , 5)),
+         icu_beds = icu_rate_of_hosp_rate*(i_cumulative - lag(i_cumulative , 5)),
          ventilators = vent_rate_of_icu_rate*(i_cumulative - lag(i_cumulative, 10))) %>% 
   gather(medical_need, value, c(hospital_beds, icu_beds, ventilators)) 
 
@@ -385,7 +385,7 @@ ggsave(both, file = here::here("plots/cumulative_cases.jpg"), width = 8, height 
 The graphs above show the outcome of the SIR model. Lines are the mean predictions, shaded areas are, from inside to outside, 50%, 75%, and 95% quantiles, and the dots are the reported data from SD DOH. 
 
 #Hospital Beds, ICU beds, and Ventilators
-From the predictions of cases above, we estimated the number of hospital beds, ICU beds, and ventilators needed. To do this, we assumed a mean hospitalization rate of 3.5% with a standard deviation of 1.5%. These values were parameterized as a beta distribution, from which we randomly assigned a hospitalization rate to each of the simulations of infections from the SIR. These values were chosen to capture the large uncertainty in hospitalization rates that may range on any given day between ~1% to 6% of cases according our model. Rates were ICU's and ventilators were similarly determined using the following distributions: ICUs (1.5% +/- 0.5%), Ventilators (0.8% +/- 0.1%). We also assumed a mean stays in the hospital system as a whole of 7, 8, or 10 days for hospitalization, ICU, and ventilators, respectively.
+From the predictions of cases above, we estimated the number of hospital beds, ICU beds, and ventilators needed. To do this, we assumed a mean hospitalization rate of 1% (of actual cases, not tested cases) with a standard deviation of 0.5%. These values were parameterized as a beta distribution, from which we randomly assigned a hospitalization rate to each of the simulations of infections from the SIR. These values were chosen to capture the large uncertainty in hospitalization rates that may range on any given day. Rates were ICU's and ventilators were similarly determined using the following distributions: ICUs (0.15% +/- 0.05%), Ventilators (0.08% +/- 0.01%). We also assumed a mean stays in the hospital system as a whole of 6, 5, or 10 days for hospitalization, ICU, and ventilators, respectively.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.height=9, fig.width=9}
 sd_hospital_beds <- read_excel(here::here("data/sd_hospital_beds.xlsx")) %>% 

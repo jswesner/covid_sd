@@ -530,7 +530,7 @@ The predictions here are purely our own and may not reflect opinions of our stat
 ## Directly modeling hospital bed use
 
 Rather than estimate hospital bed needs indirectly from an SIR (as above), there is now enough data to model the curve of cumulative COVID related hospitalizations. To do that, we first used the weibull equation to fit a non-linear curve to cumulative hospitalization data.  
-```{r echo=FALSE, fig.height=2, message=TRUE, warning=TRUE, paged.print=TRUE}
+```{r echo=FALSE, fig.height=2, message=FALSE, warning=FALSE, paged.print=FALSE}
 ggplot() +
   annotate("text", x = 0.5, y = 0.7,
                    label = "(y_cumulative[i]) %~% italic(N)(mu[i], sigma)", parse = T, family = "serif") +
@@ -673,7 +673,7 @@ predict_dailyhosp <- predict(fit_weib, newdata = newdata, summary = F)  %>%
             low95 = quantile(daily_total, probs = 0.025),
             low50 = quantile(daily_total, probs = 0.25))
 ```
-```{r echo=FALSE, fig.height=9, fig.width=8}
+```{r echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
 # Make plots
 
 cumulative_plot <- predict_cumulative %>% 

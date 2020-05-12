@@ -146,9 +146,9 @@ in Table 2.
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| ICU Beds      |   49 |       5 |     161 |
-| Hospital Beds |  386 |      27 |    1501 |
-| Ventilators   |   55 |       6 |     152 |
+| ICU Beds      |   50 |       5 |     162 |
+| Hospital Beds |  395 |      26 |    1487 |
+| Ventilators   |   56 |       6 |     150 |
 
 Table 2. Estimated peak medical needs in South Dakota.
 
@@ -189,13 +189,9 @@ related hospitalizations. To do that, we first used the weibull equation
 to fit a non-linear curve to cumulative hospitalization data.  
 ![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
-    ## Warning: Removed 14 rows containing missing values (geom_point).
-
-    ## Warning: Removed 12 rows containing missing values (geom_point).
-
 ![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
-# Weibull predictions
+## Weibull predictions
 
 Results from the model suggest that South Dakota either has or shortly
 will reach it’s peak in COVID-related hospitalizations at \~80 people

@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-May 08, 2020
+May 12, 2020
 
 # Authors
 
@@ -119,16 +119,16 @@ quantiles, and the dots are the reported data from SD DOH.
 \#Hospital Beds, ICU beds, and Ventilators From the predictions of cases
 above, we estimated the number of hospital beds, ICU beds, and
 ventilators needed. To do this, we assumed a mean hospitalization rate
-of 3.5% with a standard deviation of 1.5%. These values were
-parameterized as a beta distribution, from which we randomly assigned a
-hospitalization rate to each of the simulations of infections from the
-SIR. These values were chosen to capture the large uncertainty in
-hospitalization rates that may range on any given day between \~1% to 6%
-of cases according our model. Rates were ICU’s and ventilators were
-similarly determined using the following distributions: ICUs (1.5% +/-
-0.5%), Ventilators (0.8% +/- 0.1%). We also assumed a mean stays in the
-hospital system as a whole of 7, 8, or 10 days for hospitalization, ICU,
-and ventilators, respectively.
+of 1% (of actual cases, not tested cases) with a standard deviation of
+0.5%. These values were parameterized as a beta distribution, from which
+we randomly assigned a hospitalization rate to each of the simulations
+of infections from the SIR. These values were chosen to capture the
+large uncertainty in hospitalization rates that may range on any given
+day. Rates were ICU’s and ventilators were similarly determined using
+the following distributions: ICUs (0.15% +/- 0.05%), Ventilators (0.08%
++/- 0.01%). We also assumed a mean stays in the hospital system as a
+whole of 6, 5, or 10 days for hospitalization, ICU, and ventilators,
+respectively.
 
 ![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
@@ -146,9 +146,9 @@ in Table 2.
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| Hospital Beds | 1536 |     128 |    5822 |
-| ICU Beds      |  797 |      83 |    2644 |
-| Ventilators   |  555 |      63 |    1501 |
+| ICU Beds      |   50 |       5 |     161 |
+| Hospital Beds |  394 |      29 |    1456 |
+| Ventilators   |   56 |       6 |     149 |
 
 Table 2. Estimated peak medical needs in South Dakota.
 

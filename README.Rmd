@@ -2,7 +2,6 @@
 title: "COVID-19 modeling in South Dakota"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output: github_document
-output: html_document
 ---
 # Authors
 *Jeff Wesner, Ph.D.*^1^, *Dan Van Peursem, Ph.D.*^2^, *Jose Flores, Ph.D.*^2,3^, *Yuhlong Lio, Ph.D.*^2^
@@ -61,7 +60,7 @@ ggplot() +
   theme(text = element_text(family = "serif"))
 ```
 
-Prior values for are loosely derived from from New York City's hospitalization curve in which ~ 0.4% of the population was hospitalized. we also bounded the proportion of hospitalizations at zero to prevent predictions of negative hospitalizations.
+Prior values for are loosely derived from from New York City's hospitalization curve in which ~ 0.4% of the population was hospitalized. We also bounded the proportion of hospitalizations at zero to prevent predictions of negative hospitalizations.
 
 ## Weibull results
 
@@ -239,29 +238,34 @@ The plot below compares the prior predictive distribution (i.e. running the mode
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #prior v post
 
-posts <- posterior_samples(fit_weib) %>% as_tibble()
+posts <- posterior_samples(fit_weib) %>% as_tibble() %>% mutate(iter = 1:nrow(.))
+
 x = seq(1,200, by = 10)
 
-priors <- posts %>% select(prior_b_ult, prior_b_omega, prior_b_theta) %>% sample_n(1000) %>% 
+priors <- posts %>% select(prior_b_ult, prior_b_omega, prior_b_theta, iter) %>% sample_n(1000) %>% 
   expand_grid(x) %>% 
-  mutate(prior_pred = (prior_b_ult*x^prior_b_omega)/(prior_b_theta^prior_b_omega + x^prior_b_omega),
-         model = 'prior_prediction')
+  mutate(pred = (prior_b_ult*x^prior_b_omega)/(prior_b_theta^prior_b_omega + x^prior_b_omega),
+         model = 'prior_prediction') %>% 
+  select(x, pred, model)
 
 posteriors <- posts %>% select(b_ult_Intercept, b_omega_Intercept, b_theta_Intercept) %>% sample_n(1000) %>% 
   expand_grid(x) %>% 
-  mutate(prior_pred = (b_ult_Intercept*x^b_omega_Intercept)/(b_theta_Intercept^b_omega_Intercept + x^b_omega_Intercept),
-         model = 'posterior_prediction')
+  mutate(pred = (b_ult_Intercept*x^b_omega_Intercept)/(b_theta_Intercept^b_omega_Intercept + x^b_omega_Intercept),
+         model = 'posterior_prediction') %>% 
+  select(x, pred, model)
 
-all_posts <- bind_rows(priors, posteriors)%>% 
+
+all_posts <- bind_rows(priors, posteriors) %>% 
+  as_tibble() %>% 
   mutate(date_num = 18329 + x,
          date = as_date(date_num))
 
 all_posts %>% 
-  group_by(x, model) %>% 
-  summarize(mean = mean(prior_pred),
-            low95 = quantile(prior_pred, probs = 0.025),
-            high95 = quantile(prior_pred, probs = 0.975)) %>% 
-  ggplot(aes(x = x, y = mean*sd_pop, ymin = low95*sd_pop, ymax = high95*sd_pop,
+  group_by(date, model) %>% 
+  summarize(mean = mean(pred),
+            low95 = quantile(pred, probs = 0.025),
+            high95 = quantile(pred, probs = 0.975)) %>% 
+  ggplot(aes(x = date, y = mean*sd_pop, ymin = low95*sd_pop, ymax = high95*sd_pop,
              color = model, fill = model)) +
   geom_line() + 
   geom_ribbon(alpha = 0.2) +
@@ -269,6 +273,7 @@ all_posts %>%
   scale_x_date(date_breaks = "months" , date_labels = "%b") +
   # ylim(0, 1500) +
   labs(y = "Cumulative hospitalized",
+       x = "",
        title = "Prior versus Posterior",
        subtitle = "Difference in models indicates the influence of the data") +
   NULL

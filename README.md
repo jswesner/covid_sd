@@ -38,10 +38,10 @@ active hospitalizations.
 
 Prior values for are loosely derived from from New York City’s
 hospitalization curve in which \~ 0.4% of the population was
-hospitalized. we also bounded the proportion of hospitalizations at zero
+hospitalized. We also bounded the proportion of hospitalizations at zero
 to prevent predictions of negative hospitalizations.
 
-\#\#Weibull results
+## Weibull results
 
 Results from the model suggest that South Dakota either has or shortly
 will reach its peak in COVID-related hospitalizations at \~80 people
@@ -49,12 +49,13 @@ actively hospitalized.
 
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
-\#\#Influence of the priors The plot below compares the prior predictive
-distribution (i.e. running the model with only the prior information,
-not the data) to the posterior predictive distribution. The large
-difference in these predictions indicates that we learned a lot of
-information from the data and the priors have relatively small
-influences.
+## Influence of the priors
+
+The plot below compares the prior predictive distribution (i.e. running
+the model with only the prior information, not the data) to the
+posterior predictive distribution. The large difference in these
+predictions indicates that we learned a lot of information from the data
+and the priors have relatively small influences.
 
 ![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
@@ -175,9 +176,9 @@ in Table 2.
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| ICU Beds      |   41 |       4 |     130 |
-| Hospital Beds |  325 |      24 |    1233 |
-| Ventilators   |   45 |       5 |     120 |
+| ICU Beds      |   41 |       4 |     132 |
+| Hospital Beds |  320 |      22 |    1216 |
+| Ventilators   |   44 |       5 |     123 |
 
 Table 2. Estimated peak medical needs in South Dakota.
 

@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-May 12, 2020
+May 13, 2020
 
 # Authors
 
@@ -21,15 +21,44 @@ Dakota due to COVID-19.
 
 # Updates
 
-\*We updated the model from previous versions by 1) varying generation
-times in each simulation and 2) varying hospitalization rates, icu
-rates, and ventilator rates in each simulation. Previous versions of
-this model assumed fixed rates for these parameters. Future updates will
-be also include varying R0, since it has become clear that the initial
-exponential growth in cases has slowed (but then risen again most
-recently).
+# Alternative Approach
 
-# General Approach and Justification
+## Directly modeling hospital bed use
+
+Our previous approach attempted to estimate hospital bed use from an
+initial SIR (see *Past Approach* below). However, there is now enough
+data to directly model the curve of cumulative COVID related
+hospitalizations. To do that, we first used the Weibull equation to fit
+a Bayesian non-linear curve to cumulative hospitalization data (first
+graph below). We then converted that cumulative prediction to active
+hospitalizations by varying the days in the hospital to fit the data on
+active hospitalizations.
+
+![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+Prior values for are loosely derived from from New York City’s
+hospitalization curve in which \~ 0.4% of the population was
+hospitalized. we also bounded the proportion of hospitalizations at zero
+to prevent predictions of negative hospitalizations.
+
+\#\#Weibull results
+
+Results from the model suggest that South Dakota either has or shortly
+will reach its peak in COVID-related hospitalizations at \~80 people
+actively hospitalized.
+
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+\#\#Influence of the priors The plot below compares the prior predictive
+distribution (i.e. running the model with only the prior information,
+not the data) to the posterior predictive distribution. The large
+difference in these predictions indicates that we learned a lot of
+information from the data and the priors have relatively small
+influences.
+
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+# Past Approach - SIR
 
 We estimated R0 from current incidence rates in South Dakota. We then
 fit SIR models using our estimates of R0 and compared model predictions
@@ -57,7 +86,7 @@ We used the following equation to estimate R0 (eqn 3.1 in Wallinga and
 Lipsitch 2007)
 <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1766383/?report=reader#!po=83.3333>:
 
-![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 where 1/b is the generation time (aka serial interval) in days, and *r*
 is the slope of a linear regression between daily incidence and time.
@@ -67,7 +96,7 @@ when growth is approximately log-linear.
 We estimated a posterior distribution of *r* using reported incidence
 data in the following regression:
 
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 where *log*(y*i*) is log-transformed incidence on date *i*, distributed
 as a normal distribution with a mean *mu\[i\]* and standard deviation
@@ -77,7 +106,7 @@ equation.
 
 The outcome of that regression is below.
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 We estimated R0 by fitting the R0 equation above to 4000 iterations of
 the posterior distribution of *r*. To include uncertainty in generation
@@ -99,18 +128,18 @@ come after the actual initial infectsion from COVID-19.
 
 | mean |   sd |
 | ---: | ---: |
-| 1.61 | 0.13 |
+| 1.52 | 0.11 |
 
 Table 1. R0 mean and standard deviation sampled from to fit the SIR
 model.
 
-![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 where gamma is 1/days\_infected, beta is gamma\*R0, days\_infect is 7,
 and N is S+I+R. We simulated 200 days of infection and assumed starting
 values for S = 0.99999, I = 0.000001, and R = 0.000009.
 
-![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 The graphs above show the outcome of the SIR model. Lines are the mean
 predictions, shaded areas are, from inside to outside, 50%, 75%, and 95%
@@ -130,7 +159,7 @@ the following distributions: ICUs (0.15% +/- 0.05%), Ventilators (0.08%
 whole of 6, 5, or 10 days for hospitalization, ICU, and ventilators,
 respectively.
 
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 This plot shows the predicted number of hospital beds, ICU beds, and
 ventilators over time. The horizontal black line shows the total number
@@ -146,9 +175,9 @@ in Table 2.
 
 | Need          | Mean | Lower95 | Upper95 |
 | :------------ | ---: | ------: | ------: |
-| ICU Beds      |   50 |       5 |     162 |
-| Hospital Beds |  395 |      26 |    1487 |
-| Ventilators   |   56 |       6 |     150 |
+| ICU Beds      |   41 |       4 |     130 |
+| Hospital Beds |  325 |      24 |    1233 |
+| Ventilators   |   45 |       5 |     120 |
 
 Table 2. Estimated peak medical needs in South Dakota.
 
@@ -178,21 +207,3 @@ alleviate this uncertainty.
 
 The predictions here are purely our own and may not reflect opinions of
 our state or our employers. We welcome feedback.
-
-# Alternative Approach
-
-## Directly modeling hospital bed use
-
-Rather than estimate hospital bed needs indirectly from an SIR (as
-above), there is now enough data to model the curve of cumulative COVID
-related hospitalizations. To do that, we first used the weibull equation
-to fit a non-linear curve to cumulative hospitalization data.  
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
-
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
-
-## Weibull predictions
-
-Results from the model suggest that South Dakota either has or shortly
-will reach it’s peak in COVID-related hospitalizations at \~80 people
-actively hospitalized.

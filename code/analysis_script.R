@@ -1,4 +1,4 @@
-## ----echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE------------------------------------------------------------------------------------
+## ----echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE---------------------------------------------------------
 library(tidyverse)
 library(here)
 library(janitor)
@@ -16,7 +16,7 @@ library(brms)
 library(kableExtra)
 
 
-## ----echo=FALSE, fig.height=2, message=FALSE, warning=FALSE, paged.print=FALSE----------------------------------------------------------------------
+## ----echo=FALSE, fig.height=2, message=FALSE, warning=FALSE, paged.print=FALSE-------------------------------------------
 ggplot() +
   annotate("text", x = 0.5, y = 0.7,
                    label = "(y_cumulative[i]) %~% italic(N)(mu[i], sigma)", parse = T, family = "serif") +
@@ -36,7 +36,7 @@ ggplot() +
   theme(text = element_text(family = "serif"))
 
 
-## ----include=FALSE, cache = F-----------------------------------------------------------------------------------------------------------------------
+## ----include=FALSE, cache = F--------------------------------------------------------------------------------------------
 sd_pop <- 903027 #from here: https://worldpopulationreview.com/states/south-dakota-population/
 
 sd_covid_data <- read.csv(here::here("data/data_kelo.csv")) %>%
@@ -160,7 +160,7 @@ predict_dailyhosp <- predict(fit_weib, newdata = newdata, summary = F)  %>%
             low95 = quantile(daily_total, probs = 0.025),
             low50 = quantile(daily_total, probs = 0.25))
 
-## ----echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE---------------------------------------------------------
+## ----echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE------------------------------
 # Make plots
 
 cumulative_plot <- predict_cumulative %>% 
@@ -202,7 +202,7 @@ both_plot_weib <- plot_grid(cumulative_plot, active_plot, ncol = 1)
 both_plot_weib
 
 
-## ----echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE------------------------------------------------------------------------------------
+## ----echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE---------------------------------------------------------
 #prior v post
 
 posts <- posterior_samples(fit_weib) %>% as_tibble() %>% mutate(iter = 1:nrow(.))

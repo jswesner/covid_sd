@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-May 16, 2020
+May 18, 2020
 
 # Authors
 
@@ -59,3 +59,15 @@ predictions indicates that we learned a lot of information from the data
 and the priors have relatively small influences.
 
 ![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+## Outside of Sioux Falls
+
+Sioux Falls, SD had the earliest large outbreak in South Dakota. To
+determine how COVID19-related hospitalizations differed in Sioux Falls
+and outside of Sioux Falls, we ran the model above separately - once for
+Minnehaha County (where Sioux Falls is located) and once for all other
+areas of the state. The results are plotted below. They suggested that
+Minnehaha County is near or past its peak hospitalizations, but that the
+rest of South Dakota might not peak until mid-late summer or later.
+
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->

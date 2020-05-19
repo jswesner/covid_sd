@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-May 18, 2020
+May 19, 2020
 
 # Authors
 

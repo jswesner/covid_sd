@@ -485,5 +485,6 @@ active_plot <- all_daily %>%
 both_plot_group <- plot_grid(cumulative_plot, active_plot, ncol = 1, align = "v")
 
 both_plot_group
+ggsave(both_plot_group, file = "plots/both_plot_group.jpg", width = 7, height = 7)
 ```
 

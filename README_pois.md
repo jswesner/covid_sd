@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-May 22, 2020
+May 21, 2020
 
 # Authors
 
@@ -35,7 +35,7 @@ hospitalization data (first graph below). We then converted that
 cumulative prediction to active hospitalizations by varying the days in
 the hospital to fit the data on active hospitalizations.
 
-![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+![](README_pois_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
 Prior values for are loosely derived from from New York City’s
 hospitalization curve in which \~ 0.4% of the population was
@@ -48,7 +48,7 @@ Results from the model suggest that South Dakota either has or shortly
 will reach its peak in COVID-related hospitalizations at \~80 people
 actively hospitalized.
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](README_pois_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ## Divergent trends outside of Minnehaha County
 
@@ -61,7 +61,7 @@ exponential phase of growth. To capture this dynamic, we re-fit the
 model above but with separate random intercepts for each group (one for
 Minnehaha County and one for the rest of South Dakota).
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_pois_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ## Influence of the priors
 
@@ -71,4 +71,4 @@ posterior predictive distribution. The large difference in these
 predictions indicates that we learned a lot of information from the data
 and the priors have relatively small influences.
 
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](README_pois_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->

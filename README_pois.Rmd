@@ -214,7 +214,7 @@ fit_weib_group <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num
                         prior(gamma(4,2), nlpar = "omega")), # slope at inflection. Gamma to ensure it is positive 
                       sample_prior = "yes")
 
-# plot(conditional_effects(fit_weib_group))
+plot(conditional_effects(fit_weib_group))
 ```
 
 ```{r echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}

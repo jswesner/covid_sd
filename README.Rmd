@@ -209,7 +209,7 @@ fit_weib_group <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num
                       data = cum_hosp,
                       family = poisson(link = "log"),
                       prior = c(
-                        prior(normal(7,2), nlpar = "ult"), #asymptote - based on proportion total hosp in NY
+                        prior(normal(7,1), nlpar = "ult"), #asymptote - based on proportion total hosp in NY
                         prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
                         prior(gamma(4,2), nlpar = "omega")), # slope at inflection. Gamma to ensure it is positive 
                       sample_prior = "yes")

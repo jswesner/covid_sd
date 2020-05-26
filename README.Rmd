@@ -102,17 +102,23 @@ cum_hosp <- read_csv("data/cum_hosp.csv", na = c("", ".")) %>%
 cum_hosp_state <- cum_hosp %>% group_by(date, date_num) %>% summarize(cum_hosp = sum(cum_hosp))
 
 #fit weibull with poisson likelihood
-fit_weib_state <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),
-                         ult ~ 1 , omega ~ 1 , theta ~ 1 ,
-                         nl = TRUE ),
-                      data = cum_hosp_state,
-                      family = poisson(link = "log"),
-                      prior = c(
-                        prior(normal(7,1), nlpar = "ult"), #asymptote - based on proportion total hosp in NY
-                        prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
-                        prior(gamma(4,2), nlpar = "omega")), # slope at inflection. Gamma to ensure it is positive (has to be since data are cumulative) assumes slope of exp(2) with sd of 0.5
-                      iter = 1000, chains = 1,
-                      sample_prior = "yes")
+# fit_weib_state <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),
+#                          ult ~ 1 , omega ~ 1 , theta ~ 1 ,
+#                          nl = TRUE ),
+#                       data = cum_hosp_state,
+#                       family = poisson(link = "log"),
+#                       prior = c(
+#                         prior(normal(8,1), nlpar = "ult"), #asymptote - based on proportion total hosp in NY
+#                         prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
+#                         prior(gamma(4,2), nlpar = "omega")), # slope at inflection. Gamma to ensure it is positive (has to be since data are cumulative) assumes slope of exp(2) with sd of 0.5
+#                       iter = 1000, chains = 1,
+#                       sample_prior = "yes")
+
+fit_web_statelast <- readRDS("~/GitHub/covid_sd/outputs/fit_web_state.rds")
+
+#re-run model
+fit_weib_state <- update(fit_weib_statelast, new_data = cum_hosp_state)
+
 ```
 
 ```{r echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -203,18 +209,25 @@ both_plot_group
 The above analysis makes predictions for the state of South Dakota, but most of the early cases in the state happened in Minnehaha County. As shown below, when we plot the hospitalization trends separately, Minnehaha County appears to have nearly peaked in cumulative hospitalizations while the rest of South Dakota is still in the exponential phase of growth. To capture this dynamic, we re-fit the model above but with separate random intercepts for each group (one for Minnehaha County and one for the rest of South Dakota). 
 
 ```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-fit_weib_group <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),
-                         ult ~ 1 + (1|group), omega ~ 1 + (1|group), theta ~ 1 + (1|group),
-                         nl = TRUE ),
-                      data = cum_hosp,
-                      family = poisson(link = "log"),
-                      prior = c(
-                        prior(normal(7,1), nlpar = "ult"), #asymptote - based on proportion total hosp in NY
-                        prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
-                        prior(gamma(4,2), nlpar = "omega")), # slope at inflection. Gamma to ensure it is positive 
-                      sample_prior = "yes")
+# fit_weib_group <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),
+#                          ult ~ 1 + (1|group), omega ~ 1 + (1|group), theta ~ 1 + (1|group),
+#                          nl = TRUE ),
+#                       data = cum_hosp,
+#                       family = poisson(link = "log"),
+#                       prior = c(
+#                         prior(normal(6,1), nlpar = "ult"), #asymptote - lower to account for splitting data
+#                         prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
+#                         prior(gamma(4,2), nlpar = "omega"),
+#                         prior(cauchy(0, 1), class = "sd", nlpar = "ult"),
+#                         prior(cauchy(0, 1), class = "sd", nlpar = "theta"),
+#                         prior(cauchy(0, 1), class = "sd", nlpar = "omega")))
 
 # plot(conditional_effects(fit_weib_group))
+
+fit_web_grouplast <- readRDS("~/GitHub/covid_sd/outputs/fit_web_group.rds")
+#update models
+fit_weib_group <- update(fit_weib_grouplast, newdata = cum_hosp)
+
 ```
 
 ```{r echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}

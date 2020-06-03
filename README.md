@@ -16,8 +16,7 @@ Mathematical Sciences, <sup>3</sup>Department of Computer Science
 
 # Purpose
 
-To predict hospital bed needs, ICU needs, and ventilator needs in South
-Dakota due to COVID-19.
+To predict hospital bed needs in South Dakota due to COVID-19.
 
 # Updates
 

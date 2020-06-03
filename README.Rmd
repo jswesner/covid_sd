@@ -13,7 +13,7 @@ University of South Dakota
 <Jeff.Wesner@usd.edu>
 
 # Purpose
-To predict hospital bed needs, ICU needs, and ventilator needs in South Dakota due to COVID-19. 
+To predict hospital bed needs in South Dakota due to COVID-19. 
 
 # Updates
 
@@ -114,11 +114,8 @@ cum_hosp_state <- cum_hosp %>% group_by(date, date_num) %>% summarize(cum_hosp =
 #                       iter = 1000, chains = 1,
 #                       sample_prior = "yes")
 
-fit_web_statelast <- readRDS("~/GitHub/covid_sd/outputs/fit_web_state.rds")
-
 #re-run model
-fit_weib_state <- update(fit_weib_statelast, new_data = cum_hosp_state)
-
+fit_weib_state <- update(readRDS(here::here("outputs/fit_weib_state.rds")), newdata = cum_hosp_state)
 ```
 
 ```{r echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -147,7 +144,8 @@ predict_dailyhosp <- predict(fit_weib_state, newdata = newdata, summary = F)  %>
          date = as_date(date_num)) %>%
   arrange(iter, date_num) %>%
   group_by(iter) %>%
-  mutate(daily_total = value - lag(value, days_in_hosp)) %>%
+  mutate(inc = value - lag(value, 1)) %>% 
+  mutate(daily_total = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) + lag(inc, 6)) %>% 
   group_by(date_num) %>%
   drop_na(daily_total) %>%
   mutate(daily_total = daily_total) %>%
@@ -224,18 +222,17 @@ The above analysis makes predictions for the state of South Dakota, but most of 
 
 # plot(conditional_effects(fit_weib_group))
 
-fit_web_grouplast <- readRDS("~/GitHub/covid_sd/outputs/fit_web_group.rds")
 #update models
-fit_weib_group <- update(fit_weib_grouplast, newdata = cum_hosp)
+fit_weib_group <- update(readRDS(here::here("outputs/fit_web_group.rds")), newdata = cum_hosp)
 
 ```
 
 ```{r echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE}
 
 #group fits
-newdata <- tibble(date_num = seq(0,300, by = 1),
+newdata <- tibble(date_num = seq(0,200, by = 1),
                   group = c("Minnehaha County"))
-newdata_rest <- tibble(date_num = seq(0,300, by = 1),
+newdata_rest <- tibble(date_num = seq(0,200, by = 1),
                   group = c("Rest of South Dakota"))
 
 postpreds_minn <- predict(fit_weib_group, newdata = newdata,probs = c(0.95, 0.05, 0.75, 0.25), re_formula = NULL)  %>% 
@@ -258,8 +255,9 @@ predict_group_cumulative <- post_all %>%
   geom_point(data = cum_hosp, aes(x = date_num, y = cum_hosp, fill = group), shape = 21) +
   # ylim(0,500) +
   # facet_wrap(~group) +
-  xlim(0, 250) +
+  # xlim(0, 250) +
   # ylim(0, 1200) + 
+  coord_cartesian(ylim = c(0, 500)) + 
   theme_classic() +
   # geom_hline(yintercept = all_beds, color = "dodgerblue") +
   # annotate("text", x = as.Date("2020-04-10"), y = 2960, label = "All Hospital Beds\nin SD") +
@@ -285,7 +283,8 @@ predict_dailyhosp_minn <- predict(fit_weib_group, newdata = newdata, summary = F
   mutate(date = as_date(date_num)) %>%
   arrange(iter, date_num) %>%
   group_by(iter) %>%
-  mutate(daily_total = value - lag(value, days_in_hosp)) %>%
+  mutate(inc = value - lag(value, 1)) %>% 
+  mutate(daily_total = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) + lag(inc, 6)) %>% 
   group_by(date_num) %>%
   drop_na(daily_total) %>%
   mutate(daily_total = daily_total) %>%
@@ -313,7 +312,9 @@ predict_dailyhosp_rest <- predict(fit_weib_group, newdata = newdata_rest, summar
   mutate(date = as_date(date_num)) %>%
   arrange(iter, date_num) %>%
   group_by(iter) %>%
-  mutate(daily_total = value - lag(value, days_in_hosp)) %>%
+  mutate(inc = value - lag(value, 1)) %>% 
+  mutate(daily_total = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) + lag(inc, 6) + lag(inc, 7) + 
+           lag(inc, 8) + lag(inc, 9) + lag(inc, 10) + lag(inc, 11)) %>% 
   group_by(date_num) %>%
   drop_na(daily_total) %>%
   mutate(daily_total = daily_total) %>%
@@ -340,7 +341,7 @@ active_daily_group <- daily_hosp_all %>%
   geom_ribbon(aes(fill = group, color = group, ymin = low50, ymax = high50), alpha = 0.2) +
   # geom_point(data = daily_hosp, aes(x = date, y = daily_hosp, group = group, fill = group), shape = 21) +
   facet_wrap(~group) +
-   theme_classic() +
+  theme_classic() +
   # geom_hline(yintercept = all_beds, color = "dodgerblue") +
   # annotate("text", x = as.Date("2020-04-10"), y = 2960, label = "All Hospital Beds\nin SD") +
   labs(y = "Active hospitalizations",

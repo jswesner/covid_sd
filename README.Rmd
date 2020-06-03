@@ -204,7 +204,7 @@ both_plot_group
 
 
 ## Divergent trends outside of Minnehaha County
-The above analysis makes predictions for the state of South Dakota, but most of the early cases in the state happened in Minnehaha County. As shown below, when we plot the hospitalization trends separately, Minnehaha County appears to have nearly peaked in cumulative hospitalizations while the rest of South Dakota is still in the exponential phase of growth. To capture this dynamic, we re-fit the model above but with separate random intercepts for each group (one for Minnehaha County and one for the rest of South Dakota). 
+The analysis above makes predictions for the state of South Dakota, but most of the early cases in the state happened in Minnehaha County. As shown below, when we plot the hospitalization trends separately, Minnehaha County appears to have nearly peaked in cumulative hospitalizations while the rest of South Dakota is still in the exponential phase of growth. To capture this dynamic, we re-fit the model above but with separate random intercepts for each group (one for Minnehaha County and one for the rest of South Dakota). 
 
 ```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 # fit_weib_group <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),

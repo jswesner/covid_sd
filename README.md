@@ -1,6 +1,6 @@
 COVID-19 modeling in South Dakota
 ================
-June 03, 2020
+June 06, 2020
 
 # Authors
 
@@ -43,15 +43,21 @@ counts and the variance is likely to increase with the mean.
 
 ## Weibull results
 
-Results from the model suggest that South Dakota either has or shortly
-will reach its peak in COVID-related hospitalizations at \~80 people
-actively hospitalized.
+We converted the posterior prediction of cumulative hospitalizations to
+a prediction of active hospitalizations (number of people hospitalized
+on any given day). We did that by assuming four scenarios of average
+hospital stay lengths (5, 10, 12, and 15 days). Those predictions were
+plotted against the actual active hospitalizations reported from the
+South Dakota Deparment of Health. Results from the model suggest that
+South Dakota either has or shortly will reach its peak in COVID-related
+hospitalizations at \~100 people actively hospitalized. That prediction
+is most consistent with an average hospital stay of 10-12 days.
 
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ## Divergent trends outside of Minnehaha County
 
-The above analysis makes predictions for the state of South Dakota, but
+The analysis above makes predictions for the state of South Dakota, but
 most of the early cases in the state happened in Minnehaha County. As
 shown below, when we plot the hospitalization trends separately,
 Minnehaha County appears to have nearly peaked in cumulative

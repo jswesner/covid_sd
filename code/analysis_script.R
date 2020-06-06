@@ -1,4 +1,4 @@
-## ----echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE--------------------------------------------------------------------------------------------
+## ----echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE-------------------------------------------------------------------
 library(tidyverse)
 library(here)
 library(janitor)
@@ -16,14 +16,14 @@ library(brms)
 library(kableExtra)
 
 
-## ----echo=FALSE, fig.height=2, message=FALSE, warning=FALSE, paged.print=FALSE------------------------------------------------------------------------------
+## ----echo=FALSE, fig.height=2, message=FALSE, warning=FALSE, paged.print=FALSE-----------------------------------------------------
 ggplot() +
   annotate("text", x = 0.5, y = 0.7,
                    label = "(y_cumulative[i]) %~% italic(Poisson)(lambda[i])", parse = T, family = "serif") +
   annotate("text", x = 0.5, y = 0.52,
            label = "italic(log(lambda[i])) == frac(italic(maxX)*date[i]^omega, theta^omega + date[i]^omega)", parse = T, family = "serif") +
   annotate("text", x = 0.5, y = 0.35,
-           label = "italic(max) %~% italic(N)(7,1)", parse = T, family = "serif") +
+           label = "italic(max) %~% italic(N)(8,1)", parse = T, family = "serif") +
   annotate("text", x = 0.5, y = 0.27,
            label = "italic(theta) %~% italic(N)(50, 10)", parse = T, family = "serif") +
    annotate("text", x = 0.5, y = 0.19,
@@ -34,7 +34,7 @@ ggplot() +
   theme(text = element_text(family = "serif"))
 
 
-## ----message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE-----------------------------------------------------------------------------------------
+## ----message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE----------------------------------------------------------------
 sd_covid_data <- read.csv(here::here("data/data_kelo.csv")) %>%
   clean_names() %>%
   mutate(date_num = as.numeric(mdy(date)) - 18329,
@@ -72,37 +72,55 @@ cum_hosp <- read_csv("data/cum_hosp.csv", na = c("", ".")) %>%
 cum_hosp_state <- cum_hosp %>% group_by(date, date_num) %>% summarize(cum_hosp = sum(cum_hosp))
 
 #fit weibull with poisson likelihood
-fit_weib_state <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),
-                         ult ~ 1 , omega ~ 1 , theta ~ 1 ,
-                         nl = TRUE ),
-                      data = cum_hosp_state,
-                      family = poisson(link = "log"),
-                      prior = c(
-                        prior(normal(7,1), nlpar = "ult"), #asymptote - based on proportion total hosp in NY
-                        prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
-                        prior(gamma(4,2), nlpar = "omega")), # slope at inflection. Gamma to ensure it is positive (has to be since data are cumulative) assumes slope of exp(2) with sd of 0.5
-                      iter = 1000, chains = 1,
-                      sample_prior = "yes")
+# fit_weib_state <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),
+#                          ult ~ 1 , omega ~ 1 , theta ~ 1 ,
+#                          nl = TRUE ),
+#                       data = cum_hosp_state,
+#                       family = poisson(link = "log"),
+#                       prior = c(
+#                         prior(normal(8,1), nlpar = "ult"), #asymptote - based on proportion total hosp in NY
+#                         prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
+#                         prior(gamma(4,2), nlpar = "omega")), # slope at inflection. Gamma to ensure it is positive (has to be since data are cumulative) assumes slope of exp(2) with sd of 0.5
+#                       iter = 1000, chains = 1,
+#                       sample_prior = "yes")
+
+#re-run model
+# fit_weib_state <- update(readRDS(here::here("outputs/fit_weib_state.rds")), newdata = cum_hosp_state)
+
+yesterday <- readRDS(here::here("outputs/fit_weib_state.rds"))
+post_yest <- posterior_samples(yesterday)
+post_yestsum <- post_yest %>% 
+  gather() %>% 
+  group_by(key) %>% 
+  summarize(mean = mean(value),
+            sd = sd(value))
+
+post_yestsum$mean[2]
+
+#fit model again with new data and with yesterday's posterior as the prior
+fit_weib_state <- update(readRDS(here::here("outputs/fit_weib_state.rds")), newdata = cum_hosp_state,
+                         prior = c(
+                           prior_string(paste0("normal(",post_yestsum$mean[2],",", post_yestsum$sd[2],")"), nlpar = "theta"),
+                           prior_string(paste0("normal(",post_yestsum$mean[3],",", post_yestsum$sd[3],")"), nlpar = "ult"),
+                           prior_string(paste0("gamma(" ,post_yestsum$mean[1]^2/post_yestsum$sd[1]^2, ",",post_yestsum$mean[1]/post_yestsum$sd[1]^2,")"), nlpar = "omega")))
 
 
-## ----echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE-----------------------------------------------------------------
+saveRDS(fit_weib_state, file = here::here("outputs/fit_weib_state.rds"))
+saveRDS(fit_weib_state, file = here::here(paste0("outputs/fit_weib_state_", Sys.Date(), ".rds")))
 
 
+## ----echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE----------------------------------------
 #predictions up to 200 days after the first hospitalization
 newdata = tibble(date_num = 0:200)
 
-predict_cumulative <- predict(fit_weib_state, newdata = newdata, probs = c(0.025, 0.975, 0.25, 0.75))  %>% 
+predict_cumulative <- predict(fit_weib_state, newdata = newdata, probs = c(0.05, 0.95, 0.25, 0.75))  %>% 
   as_tibble() %>% 
   clean_names() %>% 
   mutate(date_num = 18329 + newdata$date_num,
          date = as_date(date_num),
          method = "predicted") 
 
-
-
 #make predictions of daily hospital needs
-days_in_hosp <- 10 #adjusted to visually match actual active hosps
-
 predict_dailyhosp <- predict(fit_weib_state, newdata = newdata, summary = F)  %>%
   as_tibble() %>%
   mutate(iter = 1:nrow(.)) %>%
@@ -111,26 +129,39 @@ predict_dailyhosp <- predict(fit_weib_state, newdata = newdata, summary = F)  %>
          date = as_date(date_num)) %>%
   arrange(iter, date_num) %>%
   group_by(iter) %>%
-  mutate(daily_total = value - lag(value, days_in_hosp)) %>%
+  mutate(inc = value - lag(value, 1)) %>% 
+  mutate(daily_total_5 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4),
+         daily_total_10 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9),
+         daily_total_12 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9) + lag(inc, 10) + lag(inc, 11),
+         daily_total_15 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9) + lag(inc, 10) + lag(inc, 11) + lag(inc, 12) + lag(inc, 13) + lag(inc, 14)) %>% 
+  gather(hosp_guess, daily_total, c("daily_total_5":"daily_total_15")) %>% 
   group_by(date_num) %>%
   drop_na(daily_total) %>%
-  mutate(daily_total = daily_total) %>%
-  group_by(iter, date) %>% 
+  group_by(iter, date, hosp_guess) %>% 
   filter(!any(daily_total < 0)) %>% 
-  group_by(date) %>% 
+  group_by(date, hosp_guess) %>% 
   summarize(median = median(daily_total),
             mean = mean(daily_total),
             sd = sd(daily_total),
-            high95 = quantile(daily_total, probs = 0.975),
+            high90 = quantile(daily_total, probs = 0.95),
             high50 = quantile(daily_total, probs = 0.75),
-            low95 = quantile(daily_total, probs = 0.025),
-            low50 = quantile(daily_total, probs = 0.25))
+            low90 = quantile(daily_total, probs = 0.05),
+            low50 = quantile(daily_total, probs = 0.25)) %>% 
+  ungroup() %>% 
+  mutate(hosp_guess = case_when(hosp_guess == "daily_total_5" ~ "5 days in hospital",
+                                hosp_guess == "daily_total_10" ~ "10 days in hospital",
+                                hosp_guess == "daily_total_12" ~ "12 days in hospital",
+                                TRUE ~ "15 days in hospital"),
+         hosp_guess = fct_relevel(hosp_guess, "5 days in hospital"))
 
 
 cumulative_plot <- predict_cumulative %>% 
   ggplot(aes(x = date, y = estimate)) +
   geom_line(color = "dodgerblue") +
-  geom_ribbon(aes(ymin = q2_5, ymax = q97_5), alpha = 0.2, fill = "dodgerblue" ) +
+  geom_ribbon(aes(ymin = q5, ymax = q95), alpha = 0.2, fill = "dodgerblue" ) +
   geom_ribbon(aes(ymin = q25, ymax = q75), alpha = 0.2, fill = "dodgerblue" ) +
   geom_point(data = cum_hosp_state, aes(x = date, y = cum_hosp),
              shape = 21, fill = "yellow") +
@@ -147,17 +178,18 @@ cumulative_plot <- predict_cumulative %>%
 active_plot <- predict_dailyhosp %>% 
 ggplot() +
   geom_line(aes(x = date, y = median), color = "dodgerblue") +
-  geom_ribbon(aes(x = date, ymin = low95, ymax = high95), fill = 'dodgerblue', alpha = 0.2) +
+  geom_ribbon(aes(x = date, ymin = low90, ymax = high90), fill = 'dodgerblue', alpha = 0.2) +
   geom_ribbon(aes(x = date, ymin = low50, ymax = high50), fill = 'dodgerblue', alpha = 0.2) +
   geom_point(data = sd_covid_data, aes(x = date, y = hospitalized_currently),
              shape = 21, fill = "yellow") +
   # scale_x_date(date_breaks = "months" , date_labels = "%b") +
   theme_classic() +
+  facet_grid(.~hosp_guess) +
   # geom_hline(yintercept = all_beds, color = "dodgerblue") +
   # annotate("text", x = as.Date("2020-04-10"), y = 2960, label = "All Hospital Beds\nin SD") +
   labs(y = "Active hospitalizations",
        title = "Predicting active hospitalizations from Weibull model",
-       subtitle = "Shading = 50% and 95% prediction intervals") +
+       subtitle = "Shading = 50% and 90% prediction intervals") +
   # coord_cartesian(ylim = c(0,100)) +
   NULL
 # active_plot
@@ -167,27 +199,34 @@ both_plot_group <- plot_grid(cumulative_plot, active_plot, ncol = 1, align = "v"
 both_plot_group
 
 
-## ----message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE-----------------------------------------------------------------------------------------
-fit_weib_group <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),
-                         ult ~ 1 + (1|group), omega ~ 1 + (1|group), theta ~ 1 + (1|group),
-                         nl = TRUE ),
-                      data = cum_hosp,
-                      family = poisson(link = "log"),
-                      prior = c(
-                        prior(normal(7,2), nlpar = "ult"), #asymptote - based on proportion total hosp in NY
-                        prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
-                        prior(gamma(4,2), nlpar = "omega")), # slope at inflection. Gamma to ensure it is positive 
-                      sample_prior = "yes")
+
+## ----message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE----------------------------------------------------------------
+# fit_weib_group <- brm(bf(cum_hosp ~ (ult*date_num^omega)/(theta^omega + date_num^omega),
+#                          ult ~ 1 + (1|group), omega ~ 1 + (1|group), theta ~ 1 + (1|group),
+#                          nl = TRUE ),
+#                       data = cum_hosp,
+#                       family = poisson(link = "log"),
+#                       prior = c(
+#                         prior(normal(6,1), nlpar = "ult"), #asymptote - lower to account for splitting data
+#                         prior(normal(50, 10), nlpar = "theta"), #time (days since start) of inflection
+#                         prior(gamma(4,2), nlpar = "omega"),
+#                         prior(cauchy(0, 1), class = "sd", nlpar = "ult"),
+#                         prior(cauchy(0, 1), class = "sd", nlpar = "theta"),
+#                         prior(cauchy(0, 1), class = "sd", nlpar = "omega")))
 
 # plot(conditional_effects(fit_weib_group))
 
+#update models
+fit_weib_group <- update(readRDS(here::here("outputs/fit_web_group.rds")), newdata = cum_hosp)
 
-## ----echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE-----------------------------------------------------------------
+
+
+## ----echo=FALSE, fig.height=9, fig.width=8, message=FALSE, warning=FALSE, paged.print=FALSE----------------------------------------
 
 #group fits
-newdata <- tibble(date_num = seq(0,300, by = 1),
+newdata <- tibble(date_num = seq(0,200, by = 1),
                   group = c("Minnehaha County"))
-newdata_rest <- tibble(date_num = seq(0,300, by = 1),
+newdata_rest <- tibble(date_num = seq(0,200, by = 1),
                   group = c("Rest of South Dakota"))
 
 postpreds_minn <- predict(fit_weib_group, newdata = newdata,probs = c(0.95, 0.05, 0.75, 0.25), re_formula = NULL)  %>% 
@@ -210,14 +249,15 @@ predict_group_cumulative <- post_all %>%
   geom_point(data = cum_hosp, aes(x = date_num, y = cum_hosp, fill = group), shape = 21) +
   # ylim(0,500) +
   # facet_wrap(~group) +
-  xlim(0, 250) +
+  # xlim(0, 250) +
   # ylim(0, 1200) + 
+  coord_cartesian(ylim = c(0, 500)) + 
   theme_classic() +
   # geom_hline(yintercept = all_beds, color = "dodgerblue") +
   # annotate("text", x = as.Date("2020-04-10"), y = 2960, label = "All Hospital Beds\nin SD") +
   labs(y = "Cumulative hospitalizations",
        title = "Predicting active hospitalizations from Weibull model",
-       subtitle = "Shading = 50% and 95% prediction intervals") +
+       subtitle = "Shading = 50% and 90% prediction intervals") +
   # coord_cartesian(ylim = c(0,100)) +
   NULL
 
@@ -237,13 +277,20 @@ predict_dailyhosp_minn <- predict(fit_weib_group, newdata = newdata, summary = F
   mutate(date = as_date(date_num)) %>%
   arrange(iter, date_num) %>%
   group_by(iter) %>%
-  mutate(daily_total = value - lag(value, days_in_hosp)) %>%
+  mutate(inc = value - lag(value, 1)) %>% 
+  mutate(daily_total_5 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4),
+         daily_total_10 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9),
+         daily_total_12 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9) + lag(inc, 10) + lag(inc, 11),
+         daily_total_15 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9) + lag(inc, 10) + lag(inc, 11) + lag(inc, 12) + lag(inc, 13) + lag(inc, 14)) %>% 
+  gather(hosp_guess, daily_total, c("daily_total_5":"daily_total_15")) %>% 
   group_by(date_num) %>%
   drop_na(daily_total) %>%
-  mutate(daily_total = daily_total) %>%
-  group_by(iter, date) %>% 
+  group_by(iter, date, hosp_guess) %>% 
   filter(!any(daily_total < 0)) %>% 
-  group_by(date) %>% 
+  group_by(date, hosp_guess) %>% 
   summarize(median = median(daily_total),
             mean = mean(daily_total),
             sd = sd(daily_total),
@@ -251,7 +298,15 @@ predict_dailyhosp_minn <- predict(fit_weib_group, newdata = newdata, summary = F
             high50 = quantile(daily_total, probs = 0.75),
             low90 = quantile(daily_total, probs = 0.05),
             low50 = quantile(daily_total, probs = 0.25)) %>% 
+  ungroup() %>% 
+  mutate(hosp_guess = case_when(hosp_guess == "daily_total_5" ~ "5 days in hospital",
+                                hosp_guess == "daily_total_10" ~ "10 days in hospital",
+                                hosp_guess == "daily_total_12" ~ "12 days in hospital",
+                                TRUE ~ "15 days in hospital"),
+         hosp_guess = fct_relevel(hosp_guess, "5 days in hospital")) %>% 
   mutate(group = "Minnehaha County")
+
+
 
 date_convertrest <- tibble(date_num = as.numeric(min(cum_hosp$date)) + newdata_rest$date_num) %>% 
   mutate(date_order = 1:nrow(.))
@@ -265,13 +320,20 @@ predict_dailyhosp_rest <- predict(fit_weib_group, newdata = newdata_rest, summar
   mutate(date = as_date(date_num)) %>%
   arrange(iter, date_num) %>%
   group_by(iter) %>%
-  mutate(daily_total = value - lag(value, days_in_hosp)) %>%
+  mutate(inc = value - lag(value, 1)) %>% 
+  mutate(daily_total_5 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4),
+         daily_total_10 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9),
+         daily_total_12 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9) + lag(inc, 10) + lag(inc, 11),
+         daily_total_15 = inc + lag(inc, 1) + lag(inc, 2) + lag(inc, 3) + lag(inc, 4) + lag(inc, 5) +
+            + lag(inc, 6) + lag(inc, 7) + lag(inc, 8) + lag(inc, 9) + lag(inc, 10) + lag(inc, 11) + lag(inc, 12) + lag(inc, 13) + lag(inc, 14)) %>% 
+  gather(hosp_guess, daily_total, c("daily_total_5":"daily_total_15")) %>% 
   group_by(date_num) %>%
   drop_na(daily_total) %>%
-  mutate(daily_total = daily_total) %>%
-  group_by(iter, date) %>% 
-  filter(!any(daily_total < 0)) %>%
-  group_by(date) %>% 
+  group_by(iter, date, hosp_guess) %>% 
+  filter(!any(daily_total < 0)) %>% 
+  group_by(date, hosp_guess) %>% 
   summarize(median = median(daily_total),
             mean = mean(daily_total),
             sd = sd(daily_total),
@@ -279,6 +341,12 @@ predict_dailyhosp_rest <- predict(fit_weib_group, newdata = newdata_rest, summar
             high50 = quantile(daily_total, probs = 0.75),
             low90 = quantile(daily_total, probs = 0.05),
             low50 = quantile(daily_total, probs = 0.25)) %>% 
+  ungroup() %>% 
+  mutate(hosp_guess = case_when(hosp_guess == "daily_total_5" ~ "5 days in hospital",
+                                hosp_guess == "daily_total_10" ~ "10 days in hospital",
+                                hosp_guess == "daily_total_12" ~ "12 days in hospital",
+                                TRUE ~ "15 days in hospital"),
+         hosp_guess = fct_relevel(hosp_guess, "5 days in hospital")) %>% 
   mutate(group = "Rest of South Dakota")
 
 
@@ -291,13 +359,13 @@ active_daily_group <- daily_hosp_all %>%
   geom_ribbon(aes(fill = group, color = group, ymin = low90, ymax = high90), alpha = 0.2) +
   geom_ribbon(aes(fill = group, color = group, ymin = low50, ymax = high50), alpha = 0.2) +
   # geom_point(data = daily_hosp, aes(x = date, y = daily_hosp, group = group, fill = group), shape = 21) +
-  facet_wrap(~group) +
-   theme_classic() +
+  facet_grid(group ~ hosp_guess) +
+  theme_classic() +
   # geom_hline(yintercept = all_beds, color = "dodgerblue") +
   # annotate("text", x = as.Date("2020-04-10"), y = 2960, label = "All Hospital Beds\nin SD") +
   labs(y = "Active hospitalizations",
        title = "Predicting active hospitalizations from Weibull model",
-       subtitle = "Shading = 50% and 95% prediction intervals") +
+       subtitle = "Shading = 50% and 90% prediction intervals") +
   # coord_cartesian(ylim = c(0,100)) +
   NULL
 
@@ -308,14 +376,17 @@ both_group
 
 
 
-## ----echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE--------------------------------------------------------------------------------------------
+## ----echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE-------------------------------------------------------------------
 #prior v post
 
 posts <- posterior_samples(fit_weib_state) %>% as_tibble() %>% mutate(iter = 1:nrow(.))
 
 x = seq(1,200, by = 10)
 
-priors <- posts %>% select(prior_b_ult, prior_b_omega, prior_b_theta, iter)  %>% 
+priors <- tibble(prior_b_ult = rnorm(1000, 7, 1),
+                 prior_b_omega = rgamma(1000, 4,2), 
+                 prior_b_theta = rnorm(1000, 50, 10), 
+                 iter = 1:1000)  %>% 
   expand_grid(x) %>% 
   mutate(pred = (prior_b_ult*x^prior_b_omega)/(prior_b_theta^prior_b_omega + x^prior_b_omega),
          model = 'prior_prediction') %>% 

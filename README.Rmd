@@ -230,8 +230,6 @@ both_plot_group
 
 ```
 
-
-
 ## Divergent trends outside of Minnehaha County
 The analysis above makes predictions for the state of South Dakota, but most of the early cases in the state happened in Minnehaha County. As shown below, when we plot the hospitalization trends separately, Minnehaha County appears to have nearly peaked in cumulative hospitalizations while the rest of South Dakota is still in the exponential phase of growth. To capture this dynamic, we re-fit the model above but with separate random intercepts for each group (one for Minnehaha County and one for the rest of South Dakota). 
 
@@ -298,7 +296,6 @@ predict_group_cumulative <- post_all %>%
 
 
 #active hospitalizations
-days_in_hosp <- 10 #adjusted to visually match actual active hosps
 
 date_convert <- tibble(date_num = as.numeric(min(cum_hosp$date)) + newdata$date_num) %>% 
   mutate(date_order = 1:nrow(.))
@@ -401,7 +398,7 @@ active_daily_group <- daily_hosp_all %>%
   labs(y = "Active hospitalizations",
        title = "Predicting active hospitalizations from Weibull model",
        subtitle = "Shading = 50% and 90% prediction intervals") +
-  # coord_cartesian(ylim = c(0,100)) +
+  coord_cartesian(ylim = c(0,500)) +
   NULL
 
 both_group <- plot_grid(predict_group_cumulative, active_daily_group, ncol = 1, align = "v")
@@ -423,7 +420,7 @@ posts <- posterior_samples(fit_weib_state) %>% as_tibble() %>% mutate(iter = 1:n
 
 x = seq(1,200, by = 10)
 
-priors <- tibble(prior_b_ult = rnorm(1000, 7, 1),
+priors <- tibble(prior_b_ult = rnorm(1000, 8, 1),
                  prior_b_omega = rgamma(1000, 4,2), 
                  prior_b_theta = rnorm(1000, 50, 10), 
                  iter = 1:1000)  %>% 

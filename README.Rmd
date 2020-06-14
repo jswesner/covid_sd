@@ -404,8 +404,6 @@ active_daily_group <- daily_hosp_all %>%
 both_group <- plot_grid(predict_group_cumulative, active_daily_group, ncol = 1, align = "v")
 
 both_group
-
-
 ```
 
 
